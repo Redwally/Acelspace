@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACELSPACE - Boutique</title>
+    <meta name="description"
+        content="Boutique vitrine officielle du club ACELSPACE.">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/src/style.css">
+    <!-- Critical CSS : Empêche le flash de contenu sans style (FOUC) et le logo géant au chargement -->
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
+        svg {
+            max-width: 100%;
+        }
+
+        .logo-container {
+            width: 64px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+            .logo-container {
+                width: 80px;
+                height: 44px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .logo-container {
+                width: 96px;
+                height: 48px;
+            }
+        }
+    </style>
+
+    <!-- App entry (Alpine.js) — injecté par Vite -->
+    <script type="module" src="/src/main.js"></script>
+</head>
+
+<body
+    class="bg-blueprint-grid text-slate-900 font-sans min-h-screen p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center antialiased selection:bg-sky-200 overflow-x-hidden"
+    x-data="merchApp()">
+
+    <main class="w-full max-w-[1680px] my-auto flex flex-col gap-6 sm:gap-8">
+
+        <!-- HEADER NAVBAR GRID -->
+        <header class="grid grid-cols-1 md:grid-cols-12 gap-4 shrink-0">
+
+            <!-- Logo Box (Left) -->
+            <div class="md:col-span-4 bg-card-bg card-border p-3 sm:p-4 lg:p-5 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <!-- ACE SPACE LOGO SVG -->
+                    <div
+                        class="logo-container w-16 h-9 sm:w-20 sm:h-11 lg:w-24 lg:h-12 flex items-center justify-center shrink-0">
+                        <img src="/logo.svg" alt="Logo ACE SPACE" class="w-full h-full object-contain">
+                    </div>
+                    <span
+                        class="font-black text-2xl sm:text-3xl lg:text-4xl tracking-tight text-slate-900">Acelspace</span>
+                </div>
+            </div>
+
+            <!-- Navigation Box (Right) -->
+            <div
+                class="md:col-span-8 bg-card-bg card-border p-3 sm:p-4 lg:p-5 flex items-center justify-between gap-3 overflow-x-auto">
+                <nav
+                    class="flex items-center gap-6 sm:gap-10 lg:gap-12 font-black text-sm sm:text-base lg:text-lg uppercase tracking-wider text-slate-900">
+                    <a href="#" @click.prevent="resetView()" class="hover:text-sky-700 transition-colors">HOME</a>
+                    <a href="#" @click.prevent="resetView()"
+                        class="hover:text-sky-700 transition-colors whitespace-nowrap">SHOP ALL</a>
+                    <button @click="isAboutOpen = true" class="hover:text-sky-700 transition-colors whitespace-nowrap">À
+                        PROPOS</button>
+                    <button @click="isContactOpen = true" class="hover:text-sky-700 transition-colors">CONTACT</button>
+                </nav>
+
+                <!-- Search Icon & Toggle -->
+                <div class="relative shrink-0 flex items-center">
+                    <template x-if="searchActive">
+                        <input type="text" x-model="searchQuery" placeholder="Chercher..." x-ref="searchInput"
+                            @keyup.escape="searchActive = false; searchQuery = ''"
+                            class="w-36 sm:w-48 px-3 py-1.5 text-xs sm:text-sm border-2 border-slate-900 rounded bg-white focus:outline-none mr-2">
+                    </template>
+                    <button @click="toggleSearch()" class="p-1.5 hover:opacity-75 transition-opacity"
+                        title="Rechercher">
+                        <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" stroke-width="2.8"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- HERO ROW GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
+
+            <!-- Hero Description Box (Left) -->
+            <div
+                class="md:col-span-8 bg-card-bg card-border p-6 sm:p-10 lg:p-14 flex flex-col justify-center space-y-4 min-h-[220px]">
+                <h1
+                    class="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-slate-900 uppercase leading-none">
+                    ACELSPACE
+                </h1>
+                <p class="text-slate-700 font-bold text-sm sm:text-lg lg:text-xl xl:text-2xl max-w-2xl leading-snug">
+                    Tout achat permet de financer le club, son matériel et ses activités.<br>
+                </p>
+            </div>
+
+            <!-- Top Right Product Card (Grey Logo Tee) -->
+            <div class="md:col-span-4 bg-card-bg card-border flex flex-col justify-between overflow-hidden">
+                <!-- Image Box -->
+                <div
+                    class="bg-card-bg p-4 h-64 sm:h-72 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
+                    <img :src="topProduct.image" :alt="topProduct.name"
+                        class="max-h-full max-w-full object-contain drop-shadow-md rounded-md"
+                        onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                </div>
+                <!-- Card Info Label -->
+                <div class="p-3 sm:p-4 lg:p-5 bg-card-bg flex items-center justify-between gap-3 shrink-0">
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
+                            x-text="topProduct.name"></h3>
+                        <p class="font-black text-sm sm:text-base lg:text-lg text-slate-900"
+                            x-text="'$' + topProduct.price"></p>
+                    </div>
+                    <button @click="openProductModal(topProduct)"
+                        class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
+                        <span
+                            class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
+                        <!-- Tintin Rocket -->
+                        <div
+                            class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
+                            <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
+                                <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
+                                <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
+                                <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
+                                <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
+                                <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
+                                <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
+                                <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
+                                <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
+                                <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
+                                <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
+                                <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
+                                <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827"
+                                    stroke-width="1.2" fill="none" />
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM PRODUCTS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <!-- Message aucun résultat -->
+            <div x-show="filteredProducts.length === 0"
+                class="col-span-full py-12 bg-card-bg card-border text-center space-y-3">
+                <p class="font-black text-lg text-slate-800 uppercase">Aucun produit trouvé</p>
+                <p class="text-sm text-slate-600 font-semibold">Essayez un autre mot-clé pour votre recherche.</p>
+                <button @click="resetView()"
+                    class="px-5 py-2 bg-slate-900 text-white font-bold text-xs uppercase pill-border hover:bg-sky-800 transition-colors">
+                    Réinitialiser
+                </button>
+            </div>
+
+            <template x-for="product in filteredProducts" :key="product.id">
+                <div class="bg-card-bg card-border flex flex-col justify-between overflow-hidden group">
+                    <!-- Image Box -->
+                    <div
+                        class="bg-card-bg p-4 h-60 sm:h-64 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
+                        <img :src="product.image" :alt="product.name"
+                            class="max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105 rounded-md"
+                            onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                    </div>
+
+                    <!-- Card Info Label -->
+                    <div class="p-3 sm:p-4 lg:p-5 bg-card-bg flex items-center justify-between gap-3 shrink-0">
+                        <div>
+                            <h3 class="font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
+                                x-text="product.name"></h3>
+                            <p class="font-black text-sm sm:text-base lg:text-lg text-slate-900"
+                                x-text="'$' + product.price"></p>
+                        </div>
+                        <button @click="openProductModal(product)"
+                            class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
+                            <span
+                                class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
+                            <!-- Tintin Rocket -->
+                            <div
+                                class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
+                                <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
+                                    <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
+                                    <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
+                                    <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
+                                    <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
+                                    <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
+                                    <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
+                                    <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
+                                    <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
+                                    <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
+                                    <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
+                                    <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
+                                    <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827"
+                                        stroke-width="1.2" fill="none" />
+                                </svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- FOOTER BAR -->
+        <footer
+            class="pt-1 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm lg:text-base font-bold text-slate-900 shrink-0">
+            <!-- Left copyright pill -->
+            <div class="bg-card-bg pill-border px-4 py-2 flex items-center">
+                <span>© 2026 ACELSPACE</span>
+            </div>
+
+            <!-- Right links & socials -->
+            <div class="flex items-center gap-3 sm:gap-5 flex-wrap justify-center">
+                <div class="bg-card-bg pill-border px-4 py-2 flex items-center gap-5">
+                    <button @click="isAboutOpen = true" class="hover:underline">À propos</button>
+                    <button @click="isContactOpen = true" class="hover:underline">Contact</button>
+                </div>
+
+                <!-- Social Icons -->
+                <div class="flex items-center gap-2">
+                    <!-- Facebook -->
+                    <!-- <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
+                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
+                        title="Facebook">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path
+                                d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                    </a> -->
+                    <!-- X / Twitter -->
+                    <!-- <a href="https://x.com" target="_blank" rel="noopener noreferrer"
+                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
+                        title="X">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path
+                                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                    </a> -->
+                    <!-- YouTube -->
+                    <!-- <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
+                        title="YouTube">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path
+                                d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                        </svg>
+                    </a> -->
+                    <!-- Instagram -->
+                    <a href="https://www.instagram.com/acelspace78/" target="_blank" rel="noopener noreferrer"
+                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
+                        title="Instagram">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- ── PRODUCT DETAIL MODAL ─────────────────────────────────────────────── -->
+    <div x-show="isProductModalOpen" x-cloak @keydown.escape.window="isProductModalOpen = false"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100">
+
+        <div @click.away="isProductModalOpen = false"
+            class="bg-card-bg card-border w-full max-w-lg p-5 space-y-4 relative shadow-2xl">
+
+            <button @click="isProductModalOpen = false"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center">
+                ✕
+            </button>
+
+            <template x-if="activeProduct">
+                <div class="space-y-4">
+                    <div class="bg-card-bg card-border p-4 flex items-center justify-center h-52">
+                        <img :src="activeProduct.image" :alt="activeProduct.name"
+                            class="max-h-44 object-contain drop-shadow-md rounded-md"
+                            onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-black uppercase text-slate-900" x-text="activeProduct.name"></h2>
+                            <span class="text-xl font-black text-slate-900" x-text="'$' + activeProduct.price"></span>
+                        </div>
+                        <p class="text-xs text-slate-700 font-semibold" x-text="activeProduct.description"></p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="text-[11px] font-bold uppercase text-slate-500">Tailles disponibles</span>
+                        <div class="flex gap-2">
+                            <template x-for="size in activeProduct.sizes" :key="size">
+                                <span class="px-2.5 py-1 text-xs font-black bg-white pill-border" x-text="size"></span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t-2 border-slate-900 flex flex-col gap-2">
+                        <p class="text-[11px] text-slate-600 font-bold">
+                            ℹ️ Boutique vitrine : Pour réserver ou essayer cet article, contactez les membres du bureau
+                            du club ACE SPACE.
+                        </p>
+                        <button @click="isProductModalOpen = false; isContactOpen = true"
+                            class="w-full py-2.5 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-sky-800 transition-colors">
+                            CONTACTER LE CLUB
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- ── À PROPOS MODAL ──────────────────────────────────────────────────── -->
+    <div x-show="isAboutOpen" x-cloak @keydown.escape.window="isAboutOpen = false"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+
+        <div @click.away="isAboutOpen = false"
+            class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
+            <button @click="isAboutOpen = false"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
+            <h2 class="text-xl font-black uppercase tracking-tight">À PROPOS DE ACE SPACE</h2>
+            <div class="space-y-2 text-xs text-slate-800 font-medium leading-relaxed">
+                <p>none <strong>ACELSPACE</strong> 
+                    none.</p>
+                <p>Notre boutique vitrine présente la collection de merch et goodies à l'effigie du club.</p>
+            </div>
+            <button @click="isAboutOpen = false"
+                class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
+        </div>
+    </div>
+
+    <!-- ── CONTACT MODAL ───────────────────────────────────────────────────── -->
+    <div x-show="isContactOpen" x-cloak @keydown.escape.window="isContactOpen = false"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+
+        <div @click.away="isContactOpen = false"
+            class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
+            <button @click="isContactOpen = false"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
+            <h2 class="text-xl font-black uppercase tracking-tight">CONTACT DU CLUB</h2>
+            <div class="space-y-2 text-xs font-mono">
+                <div class="p-3 bg-white pill-border">
+                    <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">EMAIL</span>
+                    <span class="font-bold text-slate-900 text-sm">contact@acespace-club.org</span>
+                </div>
+                <div class="p-3 bg-white pill-border">
+                    <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">INSTAGRAM</span>
+                    <span class="font-bold text-slate-900 text-sm">@acespace_club</span>
+                </div>
+            </div>
+            <button @click="isContactOpen = false"
+                class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
+        </div>
+    </div>
+
+</body>
+
+</html>

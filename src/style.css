@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+/* ── Thème custom Tailwind v4 ─────────────────────────────────────────────── */
+@theme {
+    --color-grid-bg:     #bce0ec;
+    --color-grid-line:   #8fcae0;
+    --color-card-bg:     #f6f3eb;
+    --color-dark-border: #111827;
+    --color-logo-blue:   #5e8297;
+    --color-logo-light:  #87b8cb;
+
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Courier New', monospace;
+}
+
+/* ── Blueprint Grid Background ───────────────────────────────────────────── */
+.bg-blueprint-grid {
+    background-color: #bce0ec;
+    background-image:
+        linear-gradient(to right,  rgba(135, 195, 215, 0.65) 1.5px, transparent 1.5px),
+        linear-gradient(to bottom, rgba(135, 195, 215, 0.65) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+.card-border {
+    border: 2.5px solid #111827;
+    border-radius: 8px;
+}
+
+.pill-border {
+    border: 2px solid #111827;
+    border-radius: 6px;
+}
+
+/* ── Alpine cloak (aussi en inline dans <head> pour éviter le flash) ──────── */
+[x-cloak] { display: none !important; }
+
+
+
+/* ── Rocket animation ─────────────────────────────────────────────────────── */
+@keyframes flyTintinRocket {
+    0%   { transform: translateX(-120%); opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: translateX(280%); opacity: 0; }
+}
+
+.group\/btn:hover .rocket-fly {
+    animation: flyTintinRocket 1.4s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+}
