@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACELSPACE - Boutique</title>
-    <meta name="description"
-        content="Boutique vitrine officielle du club ACELSPACE.">
+    <meta name="description" content="Boutique vitrine officielle du club ACELSPACE.">
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/src/style.css">
     <!-- Critical CSS : Empêche le flash de contenu sans style (FOUC) et le logo géant au chargement -->
@@ -58,13 +57,13 @@
             <!-- Logo Box (Left) -->
             <div class="md:col-span-4 bg-card-bg card-border p-3 sm:p-4 lg:p-5 flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <!-- ACE SPACE LOGO SVG -->
+                    <!-- ACELSPACE LOGO SVG -->
                     <div
                         class="logo-container w-16 h-9 sm:w-20 sm:h-11 lg:w-24 lg:h-12 flex items-center justify-center shrink-0">
-                        <img src="/logo.svg" alt="Logo ACE SPACE" class="w-full h-full object-contain">
+                        <img src="/logo.svg" alt="Logo ACELSPACE" class="w-full h-full object-contain">
                     </div>
                     <span
-                        class="font-black text-2xl sm:text-3xl lg:text-4xl tracking-tight text-slate-900">Acelspace</span>
+                        class="font-black text-2xl sm:text-3xl lg:text-4xl tracking-tight text-slate-900">ACELSPACE</span>
                 </div>
             </div>
 
@@ -282,57 +281,262 @@
         </footer>
     </main>
 
-    <!-- ── PRODUCT DETAIL MODAL ─────────────────────────────────────────────── -->
+    <!-- ── PRODUCT DETAIL & PRECOMMANDE MODAL ────────────────────────────── -->
     <div x-show="isProductModalOpen" x-cloak @keydown.escape.window="isProductModalOpen = false"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100">
 
         <div @click.away="isProductModalOpen = false"
-            class="bg-card-bg card-border w-full max-w-lg p-5 space-y-4 relative shadow-2xl">
+            class="bg-card-bg card-border w-full max-w-lg p-5 sm:p-6 space-y-4 relative shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
 
             <button @click="isProductModalOpen = false"
-                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center">
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center z-10"
+                title="Fermer">
                 ✕
             </button>
 
             <template x-if="activeProduct">
-                <div class="space-y-4">
-                    <div class="bg-card-bg card-border p-4 flex items-center justify-center h-52">
-                        <img :src="activeProduct.image" :alt="activeProduct.name"
-                            class="max-h-44 object-contain drop-shadow-md rounded-md"
-                            onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
-                    </div>
+                <div>
+                    <!-- ── ÉTAPE 1 : FICHE PRODUIT SEULE ────────────────────────── -->
+                    <div x-show="step === 1" x-transition:enter="transition ease-out duration-200 transform"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
 
-                    <div class="space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-black uppercase text-slate-900" x-text="activeProduct.name"></h2>
-                            <span class="text-xl font-black text-slate-900" x-text="'$' + activeProduct.price"></span>
+                        <!-- Image Box -->
+                        <div
+                            class="bg-card-bg card-border p-4 h-64 sm:h-72 flex items-center justify-center overflow-hidden">
+                            <img :src="activeProduct.image" :alt="activeProduct.name"
+                                class="max-h-full max-w-full object-contain rounded-md drop-shadow-md"
+                                onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
                         </div>
-                        <p class="text-xs text-slate-700 font-semibold" x-text="activeProduct.description"></p>
-                    </div>
 
-                    <div class="space-y-1">
-                        <span class="text-[11px] font-bold uppercase text-slate-500">Tailles disponibles</span>
-                        <div class="flex gap-2">
-                            <template x-for="size in activeProduct.sizes" :key="size">
-                                <span class="px-2.5 py-1 text-xs font-black bg-white pill-border" x-text="size"></span>
-                            </template>
+                        <!-- Product Info -->
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900"
+                                    x-text="activeProduct.name"></h2>
+                                <span class="text-xl sm:text-2xl font-black text-slate-900"
+                                    x-text="'$' + activeProduct.price"></span>
+                            </div>
+
+                            <p class="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed"
+                                x-text="activeProduct.description"></p>
+
+                            <!-- Available sizes pills -->
+                            <div class="pt-1 flex items-center gap-1.5 flex-wrap">
+                                <span class="text-[11px] font-black uppercase text-slate-600 mr-1">Tailles disponibles
+                                    :</span>
+                                <template x-for="size in activeProduct.sizes" :key="size">
+                                    <span
+                                        class="px-2 py-0.5 bg-white pill-border text-[10px] sm:text-xs font-black uppercase text-slate-900"
+                                        x-text="size"></span>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Action Button Step 1 -> Step 2 -->
+                        <div class="pt-2">
+                            <button @click="goToStep(2)"
+                                class="w-full py-3.5 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                                <span>PRÉCOMMANDER</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="pt-3 border-t-2 border-slate-900 flex flex-col gap-2">
-                        <p class="text-[11px] text-slate-600 font-bold">
-                            ℹ️ Boutique vitrine : Pour réserver ou essayer cet article, contactez les membres du bureau
-                            du club ACE SPACE.
-                        </p>
-                        <button @click="isProductModalOpen = false; isContactOpen = true"
-                            class="w-full py-2.5 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-sky-800 transition-colors">
-                            CONTACTER LE CLUB
+                    <!-- ── ÉTAPE 2 : FORMULAIRE DE PRÉCOMMANDE ───────────────────── -->
+                    <div x-show="step === 2" x-transition:enter="transition ease-out duration-200 transform"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+
+                        <!-- Mini-récap Produit en haut -->
+                        <div class="flex items-center justify-between p-3 bg-white card-border">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-12 h-12 bg-card-bg card-border p-1 flex items-center justify-center shrink-0">
+                                    <img :src="activeProduct.image" :alt="activeProduct.name"
+                                        class="max-h-full max-w-full object-contain rounded">
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-xs sm:text-sm uppercase text-slate-900"
+                                        x-text="activeProduct.name"></h3>
+                                    <span class="text-[10px] font-bold text-slate-600 uppercase">Sans paiement
+                                        immédiat</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-black text-sm sm:text-base text-slate-900"
+                                    x-text="'$' + activeProduct.price + ' / u.'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Bouton Retour Étape 1 -->
+                        <button type="button" @click="goToStep(1)"
+                            class="text-xs font-black uppercase text-slate-900 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
+                            <span>←</span> RETOUR À LA FICHE
+                        </button>
+
+                        <!-- Error Message Banner -->
+                        <template x-if="orderError">
+                            <div
+                                class="p-3 bg-red-100 border-2 border-red-900 rounded-md text-red-950 text-xs font-bold flex items-center gap-2">
+                                <span>⚠️</span>
+                                <span x-text="orderError"></span>
+                            </div>
+                        </template>
+
+                        <!-- Pre-order Form -->
+                        <form @submit.prevent="submitPrecommande()" class="space-y-3.5">
+                            <!-- Nom & Prénom -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-black uppercase text-slate-700">Nom & Prénom <span
+                                        class="text-red-600">*</span></label>
+                                <input type="text" x-model="orderForm.nom" required placeholder="ex: Alex Dupont"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+
+                            <!-- Contact : Email ou Instagram -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-black uppercase text-slate-700">Contact (Email ou
+                                    Instagram) <span class="text-red-600">*</span></label>
+                                <input type="text" x-model="orderForm.contact" required
+                                    placeholder="ex: alex@email.com ou @alex_insta"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+
+                            <!-- 2 Columns : Taille & Quantité -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- Taille -->
+                                <div class="space-y-1">
+                                    <label class="block text-[11px] font-black uppercase text-slate-700">Taille <span
+                                            class="text-red-600">*</span></label>
+                                    <select x-model="orderForm.taille"
+                                        class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer">
+                                        <template x-for="size in activeProduct.sizes" :key="size">
+                                            <option :value="size" x-text="size"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <!-- Quantité -->
+                                <div class="space-y-1">
+                                    <label class="block text-[11px] font-black uppercase text-slate-700">Quantité (1-10)
+                                        <span class="text-red-600">*</span></label>
+                                    <input type="number" min="1" max="10" x-model.number="orderForm.quantite" required
+                                        class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                                </div>
+                            </div>
+
+                            <!-- Estimation du total en direct -->
+                            <div class="p-3 bg-white card-border flex items-center justify-between">
+                                <span class="font-black text-xs uppercase text-slate-800">Estimation du total :</span>
+                                <span class="font-black text-lg text-slate-900"
+                                    x-text="'$' + estimatedTotalPrice"></span>
+                            </div>
+
+                            <!-- RGPD Checkbox -->
+                            <div class="flex items-start gap-2.5 pt-1">
+                                <input type="checkbox" id="rgpdConsent" x-model="orderForm.rgpdConsent" required
+                                    class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
+                                <label for="rgpdConsent"
+                                    class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
+                                    J'accepte que mes coordonnées soient utilisées par le club ACELSPACE pour me
+                                    recontacter au sujet de cette précommande.
+                                    <button type="button" @click="isPrivacyModalOpen = true"
+                                        class="underline font-black text-slate-900 hover:text-slate-700">
+                                        Politique de confidentialité
+                                    </button>.
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" :disabled="orderSubmitting"
+                                class="w-full py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                                <template x-if="orderSubmitting">
+                                    <span class="inline-block animate-spin">⏳</span>
+                                </template>
+                                <span
+                                    x-text="orderSubmitting ? 'ENREGISTREMENT...' : 'CONFIRMER LA PRÉCOMMANDE'"></span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- ── ÉTAPE 3 : CONFIRMATION APRÈS POST ────────────────────── -->
+                    <div x-show="step === 3" x-transition:enter="transition ease-out duration-200 transform"
+                        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                        class="space-y-5 text-center py-4">
+
+                        <div
+                            class="w-14 h-14 bg-slate-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-black shadow-md">
+                            ✓
+                        </div>
+
+                        <div class="space-y-2">
+                            <h3 class="text-lg font-black uppercase text-slate-900">Précommande Enregistrée !</h3>
+                            <p class="text-xs sm:text-sm text-slate-700 font-semibold" x-text="orderSuccess"></p>
+                        </div>
+
+                        <div class="p-3 bg-white card-border text-xs font-bold text-slate-800">
+                            Précommande sans paiement en ligne, le club vous recontactera très prochainement.
+                        </div>
+
+                        <button @click="isProductModalOpen = false"
+                            class="w-full py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 transition-colors">
+                            FERMER
                         </button>
                     </div>
                 </div>
             </template>
+        </div>
+    </div>
+
+    <!-- ── POLITIQUE DE CONFIDENTIALITÉ (RGPD) MODAL ───────────────────────── -->
+    <div x-show="isPrivacyModalOpen" x-cloak @keydown.escape.window="isPrivacyModalOpen = false"
+        class="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto"
+        x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100">
+
+        <div @click.away="isPrivacyModalOpen = false"
+            class="bg-card-bg card-border w-full max-w-lg p-6 space-y-4 relative shadow-2xl my-8 max-h-[85vh] overflow-y-auto">
+            <button @click="isPrivacyModalOpen = false"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors">✕</button>
+
+            <h2 class="text-lg sm:text-xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
+                <span>🛡️</span> Politique de Confidentialité (RGPD)
+            </h2>
+
+            <div class="space-y-3 text-xs text-slate-800 font-medium leading-relaxed">
+                <div class="p-3 bg-white pill-border space-y-1">
+                    <h3 class="font-black uppercase text-slate-900 text-[11px]">1. Données collectées</h3>
+                    <p class="text-slate-700">Nom & Prénom, moyen de contact (adresse email ou identifiant Instagram),
+                        choix de taille et quantité d'articles précommandés.</p>
+                </div>
+
+                <div class="p-3 bg-white pill-border space-y-1">
+                    <h3 class="font-black uppercase text-slate-900 text-[11px]">2. Finalité du traitement</h3>
+                    <p class="text-slate-700">Ces données sont strictement destinées au traitement logistique des
+                        précommandes et à la prise de contact par les membres du bureau du club ACELSPACE. Aucun usage
+                        commercial tiers ni revente.</p>
+                </div>
+
+                <div class="p-3 bg-white pill-border space-y-1">
+                    <h3 class="font-black uppercase text-slate-900 text-[11px]">3. Durée de conservation</h3>
+                    <p class="text-slate-700">Les données sont conservées pendant toute la durée du traitement de votre
+                        commande et sont supprimées ou anonymisées au plus tard 6 mois après la livraison.</p>
+                </div>
+
+                <div class="p-3 bg-white pill-border space-y-1">
+                    <h3 class="font-black uppercase text-slate-900 text-[11px]">4. Vos droits & Suppression</h3>
+                    <p class="text-slate-700">Conformément au RGPD, vous disposez d'un droit d'accès, de rectification
+                        et d'effacement de vos données sur simple demande par email à : <strong
+                            class="text-slate-900">contact@acelspace.org</strong>.</p>
+                </div>
+            </div>
+
+            <button @click="isPrivacyModalOpen = false"
+                class="w-full py-2.5 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-slate-800 transition-colors">
+                COMPRIS & FERMER
+            </button>
         </div>
     </div>
 
@@ -344,11 +548,11 @@
             class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
             <button @click="isAboutOpen = false"
                 class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
-            <h2 class="text-xl font-black uppercase tracking-tight">À PROPOS DE ACE SPACE</h2>
+            <h2 class="text-xl font-black uppercase tracking-tight">À PROPOS DE ACELSPACE</h2>
             <div class="space-y-2 text-xs text-slate-800 font-medium leading-relaxed">
-                <p>none <strong>ACELSPACE</strong> 
-                    none.</p>
-                <p>Notre boutique vitrine présente la collection de merch et goodies à l'effigie du club.</p>
+                <p>Depuis 2014, <strong>ACELSPACE</strong> rassemble la communauté locale autour de valeurs de passion
+                    et de partage.</p>
+                <p>Notre boutique vitrine présente la collection officielle de merch et goodies à l'effigie du club.</p>
             </div>
             <button @click="isAboutOpen = false"
                 class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
@@ -367,11 +571,11 @@
             <div class="space-y-2 text-xs font-mono">
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">EMAIL</span>
-                    <span class="font-bold text-slate-900 text-sm">contact@acespace-club.org</span>
+                    <span class="font-bold text-slate-900 text-sm">contact@acelspace.org</span>
                 </div>
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">INSTAGRAM</span>
-                    <span class="font-bold text-slate-900 text-sm">@acespace_club</span>
+                    <span class="font-bold text-slate-900 text-sm">@acelspace78</span>
                 </div>
             </div>
             <button @click="isContactOpen = false"

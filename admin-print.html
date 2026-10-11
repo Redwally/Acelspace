@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACELSPACE — Liste des précommandes</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/src/style.css">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+        }
+
+        .print-table thead {
+            display: table-header-group;
+        }
+
+        .print-table th {
+            border: 1.5px solid #000000;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 10pt;
+            background-color: #f3f4f6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .print-table td {
+            border: 1px solid #000000;
+            padding: 10px 10px;
+            min-height: 10mm;
+            vertical-align: middle;
+        }
+
+        .print-table tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .checkbox-cell {
+            width: 60px;
+            text-align: center;
+        }
+
+        .checkbox-box {
+            display: inline-block;
+            width: 6mm;
+            height: 6mm;
+            border: 1.5px solid #000000;
+            border-radius: 2px;
+            background-color: #ffffff;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-10 antialiased" x-data="printApp()" x-init="loadData()">
+
+    <!-- Screen Toolbar (hidden on print) -->
+    <div class="no-print max-w-4xl mx-auto mb-8 p-4 bg-slate-900 text-white rounded-lg flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+            <span class="text-xl">🖨️</span>
+            <div>
+                <h1 class="text-sm font-black uppercase">Impression — Liste de Remise</h1>
+                <p class="text-xs text-slate-300">A4 Portrait • Noir & Blanc • Prêt à imprimer</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/admin.html" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded transition-colors">
+                ← Retour Admin
+            </a>
+            <button @click="triggerPrint()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-black uppercase rounded transition-colors cursor-pointer">
+                Imprimer (Ctrl+P)
+            </button>
+        </div>
+    </div>
+
+    <!-- Printable Sheet Container -->
+    <div class="max-w-4xl mx-auto bg-white">
+
+        <!-- Loading State -->
+        <template x-if="loading">
+            <div class="no-print text-center py-16 space-y-3">
+                <div class="text-3xl animate-spin inline-block">⚙️</div>
+                <p class="font-bold text-sm uppercase">Chargement des données...</p>
+            </div>
+        </template>
+
+        <!-- Error State -->
+        <template x-if="error">
+            <div class="no-print p-6 bg-red-50 border-2 border-red-900 text-red-950 rounded-lg max-w-lg mx-auto text-center space-y-3 shadow-md">
+                <div class="text-3xl">⚠️</div>
+                <h2 class="font-black text-base uppercase tracking-tight" x-text="error.title || 'Erreur'"></h2>
+                <p class="text-sm font-medium" x-text="error.message || error"></p>
+                <div class="pt-2">
+                    <template x-if="error.is401">
+                        <a href="/admin.html" class="inline-block px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded transition-colors shadow">
+                            Se connecter
+                        </a>
+                    </template>
+                    <template x-if="!error.is401">
+                        <a href="/admin.html" class="inline-block px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase rounded transition-colors">
+                            ← Retour au panneau admin
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Printable Document Content -->
+        <template x-if="!loading && !error">
+            <div class="space-y-6">
+                <!-- Document Header -->
+                <header class="border-b-2 border-black pb-4 flex items-end justify-between gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-black">
+                            ACELSPACE — Liste des précommandes
+                        </h1>
+                        <p class="text-xs font-semibold text-black uppercase tracking-wider pt-0.5">
+                            Liste de remise officielle du matériel & merch
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-black uppercase block">Date d'impression :</span>
+                        <span class="text-xs font-bold text-black" x-text="printDate"></span>
+                    </div>
+                </header>
+
+                <!-- Orders Table (5 Columns: N°, PAYÉ, NOM PRÉNOM, COMMANDE, TOTAL) -->
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 12%; text-align: center;">N°</th>
+                            <th class="checkbox-cell">PAYÉ</th>
+                            <th style="width: 32%;">NOM PRÉNOM</th>
+                            <th>COMMANDE</th>
+                            <th style="width: 15%; text-align: right;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(p, index) in (persons || [])" :key="index">
+                            <tr>
+                                <!-- N° Client C-001 -->
+                                <td class="font-black text-center font-mono text-xs text-black" x-text="p.clientIdFormatted || ('C-' + String(p.clientId || 0).padStart(3, '0'))"></td>
+
+                                <!-- Checkbox 6mm -->
+                                <td class="checkbox-cell">
+                                    <span class="checkbox-box"></span>
+                                </td>
+
+                                <!-- Nom Prénom -->
+                                <td class="font-black uppercase text-black" x-text="p && p.nom ? p.nom : 'CLIENT SANS NOM'"></td>
+
+                                <!-- Commande concaténée -->
+                                <td class="font-semibold text-black" x-text="p && p.commande ? p.commande : '-'"></td>
+
+                                <!-- Total en $ -->
+                                <td class="font-black text-right text-black" x-text="'$' + (p && p.total != null ? p.total : 0)"></td>
+                            </tr>
+                        </template>
+
+                        <!-- Final Summary Row -->
+                        <tr class="bg-gray-100 font-black" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                            <td colspan="3" class="p-3 border-2 border-black text-black">
+                                TOTAL : <span x-text="(totalPersons || 0) + ' client(s)'"></span>
+                            </td>
+                            <td class="p-3 border-2 border-black text-right text-black uppercase" colspan="2">
+                                MONTANT TOTAL : <span x-text="'$' + (grandTotalAmount || 0)"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Document Footer Note -->
+                <footer class="pt-6 border-t border-black text-center">
+                    <p class="text-[10pt] font-black uppercase tracking-wider text-black">
+                        Document interne : à détruire après la remise
+                    </p>
+                </footer>
+            </div>
+        </template>
+
+    </div>
+
+    <!-- Alpine Store logic for print page -->
+    <script type="module">
+        import Alpine from 'alpinejs';
+
+        Alpine.data('printApp', () => ({
+            loading: true,
+            error: null,
+            persons: [],
+            totalPersons: 0,
+            grandTotalAmount: 0,
+            printDate: '',
+
+            async loadData() {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const statut = urlParams.get('statut') || 'all';
+                    const produit = urlParams.get('produit') || 'all';
+
+                    const res = await fetch(`/api/admin/print-data?statut=${encodeURIComponent(statut)}&produit=${encodeURIComponent(produit)}`, {
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    // 401 Session Expirée
+                    if (res.status === 401) {
+                        this.error = {
+                            is401: true,
+                            title: 'Authentification requise',
+                            message: 'Session expirée, reconnecte-toi'
+                        };
+                        return;
+                    }
+
+                    // Autre erreur HTTP
+                    if (!res.ok) {
+                        const errorDetail = await res.text().catch(() => '');
+                        console.error(`[Admin Print] Erreur HTTP ${res.status} (${res.statusText}):`, errorDetail);
+                        this.error = {
+                            is401: false,
+                            title: `Erreur HTTP ${res.status}`,
+                            message: `Erreur ${res.status} (${res.statusText || 'Erreur serveur'}) lors de la récupération des données.`
+                        };
+                        return;
+                    }
+
+                    const json = await res.json();
+                    if (!json || !json.success || !json.data) {
+                        console.error('[Admin Print] Format de données JSON inattendu:', json);
+                        this.error = {
+                            is401: false,
+                            title: 'Données invalides',
+                            message: json && json.message ? json.message : 'Format de réponse invalide reçu du serveur.'
+                        };
+                        return;
+                    }
+
+                    this.persons = json.data.persons || [];
+                    this.totalPersons = json.data.totalPersons || 0;
+                    this.grandTotalAmount = json.data.grandTotalAmount || 0;
+                    this.printDate = json.data.printDate || new Date().toLocaleString('fr-FR');
+
+                    // Auto-trigger print once rendering is settled
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            window.print();
+                        }, 400);
+                    });
+
+                } catch (err) {
+                    console.error('[Admin Print] Erreur réseau ou exception critique:', err);
+                    this.error = {
+                        is401: false,
+                        title: 'Erreur réseau',
+                        message: `Impossible de contacter le serveur (${err.message || 'Erreur inconnue'})`
+                    };
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            triggerPrint() {
+                window.print();
+            }
+        }));
+
+        Alpine.start();
+    </script>
+</body>
+
+</html>

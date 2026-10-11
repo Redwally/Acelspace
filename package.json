@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n \"BACK,FRONT\" -c \"cyan,green\" \"npm run dev:back\" \"npm run dev:front\"",
+    "dev:front": "vite",
+    "dev:back": "node backend/server.js",
+    "server": "node backend/server.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node backend/server.js"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -14,6 +18,15 @@
     "vite": "^8.3.0"
   },
   "dependencies": {
-    "alpinejs": "^3.17.4"
+    "alpinejs": "^3.17.4",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "concurrently": "^10.0.6",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0"
   }
 }
