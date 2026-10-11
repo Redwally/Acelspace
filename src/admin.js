@@ -7,6 +7,9 @@ Alpine.data('adminApp', () => ({
     loginLoading: false,
     loginError: '',
 
+    // Active navigation tab
+    activeTab: 'precommandes', // 'precommandes' | 'catalogue'
+
     precommandes: [],
     stats: {
         totalOrders: 0,
@@ -21,6 +24,7 @@ Alpine.data('adminApp', () => ({
     messageFermeture: 'Les précommandes sont terminées. Merci !',
     statusLoading: false,
     confirmToggleModalOpen: false,
+    statusToggleError: '',
 
     filterStatut: 'all',
     filterProduit: 'all',
@@ -35,6 +39,34 @@ Alpine.data('adminApp', () => ({
     deleteClientModalOpen: false,
     clientToDelete: null,
     deleteClientLoading: false,
+
+    // ─── Catalogue Produits State ─────────────────────────────────────────────
+    products: [],
+    productsLoading: false,
+    productModalOpen: false,
+    productSaving: false,
+    productFormError: '',
+    sizeInput: '',
+    productForm: {
+        id: null,
+        name: '',
+        price: '',
+        description: '',
+        sizes: ['Taille unique'],
+        featured: false,
+        actif: 1,
+        imageFile: null,
+        imagePreview: null,
+        currentImage: null
+    },
+
+    // Delete Product Modal
+    deleteProductModalOpen: false,
+    productToDelete: null,
+    deleteProductLoading: false,
+    deleteProductError: '',
+    deleteProductHasOrders: false,
+    deleteProductOrderCount: 0,
 
     toast: {
         show: false,
@@ -60,7 +92,7 @@ Alpine.data('adminApp', () => ({
             type,
             timer: setTimeout(() => {
                 this.toast.show = false;
-            }, 3500)
+            }, type === 'error' ? 5000 : 3500)
         };
     },
 
@@ -87,7 +119,7 @@ Alpine.data('adminApp', () => ({
                 const data = await res.json();
                 if (data.authenticated) {
                     this.authenticated = true;
-                    await Promise.all([this.fetchPrecommandes(), this.fetchStatus()]);
+                    await Promise.all([this.fetchPrecommandes(), this.fetchStatus(), this.fetchProducts()]);
                 }
             } else {
                 this.authenticated = false;
@@ -124,7 +156,7 @@ Alpine.data('adminApp', () => ({
                 this.authenticated = true;
                 this.password = '';
                 this.showToast('Connexion réussie !');
-                await this.fetchPrecommandes();
+                await Promise.all([this.fetchPrecommandes(), this.fetchStatus(), this.fetchProducts()]);
             }
         } catch (err) {
             console.error('Erreur login :', err);
@@ -142,6 +174,7 @@ Alpine.data('adminApp', () => ({
         } finally {
             this.authenticated = false;
             this.precommandes = [];
+            this.products = [];
             this.showToast('Déconnexion réussie.');
         }
     },
@@ -168,18 +201,53 @@ Alpine.data('adminApp', () => ({
                 if (data.stats) {
                     this.stats = data.stats;
                 }
+            } else {
+                this.showToast(`[${res.status}] ${data.message || 'Erreur chargement précommandes.'}`, 'error');
             }
         } catch (err) {
             console.error('Erreur fetch precommandes :', err);
-            this.showToast('Erreur lors du chargement des précommandes.', 'error');
+            this.showToast(`Erreur réseau précommandes : ${err.message}`, 'error');
         } finally {
             this.loading = false;
         }
     },
 
+    get groupedOrders() {
+        const groups = [];
+        const map = new Map();
+        for (const order of this.precommandes) {
+            const ref = order.commande_ref || ('CMD-' + String(order.id).padStart(4, '0'));
+            if (!map.has(ref)) {
+                const group = {
+                    commande_ref: ref,
+                    client_id: order.client_id,
+                    nom: order.nom,
+                    email: order.email || order.contact || '-',
+                    telephone: order.telephone || '-',
+                    date_creation: order.date_creation,
+                    date_consentement: order.date_consentement,
+                    lines: [],
+                    totalPrice: 0,
+                    totalQty: 0,
+                    commonStatut: order.statut
+                };
+                map.set(ref, group);
+                groups.push(group);
+            }
+            const g = map.get(ref);
+            g.lines.push(order);
+            g.totalPrice = Math.round((g.totalPrice + (Number(order.prix_estime) || 0)) * 100) / 100;
+            g.totalQty += (Number(order.quantite) || 0);
+            if (g.commonStatut !== order.statut) {
+                g.commonStatut = 'mixed';
+            }
+        }
+        return groups;
+    },
+
     async updateStatut(order, newStatut) {
         const previousStatut = order.statut;
-        order.statut = newStatut; // Optimistic update
+        order.statut = newStatut;
 
         try {
             const res = await fetch(`/api/admin/precommandes/${order.id}`, {
@@ -192,16 +260,54 @@ Alpine.data('adminApp', () => ({
 
             if (!res.ok || !data.success) {
                 order.statut = previousStatut;
-                this.showToast(data.message || 'Échec de mise à jour du statut.', 'error');
+                this.showToast(`[${res.status}] ${data.message || 'Échec de mise à jour du statut.'}`, 'error');
             } else {
-                this.showToast(`Statut de la commande #${order.id} mis à jour : ${newStatut}`);
-                // Refresh stats
-                this.fetchPrecommandes();
+                this.showToast(`Statut de l'article #${order.id} mis à jour : ${newStatut}`);
             }
         } catch (err) {
             console.error('Erreur update statut :', err);
             order.statut = previousStatut;
-            this.showToast('Erreur réseau lors de la mise à jour.', 'error');
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
+        } finally {
+            await this.fetchPrecommandes();
+        }
+    },
+
+    async updateGroupStatut(group, event) {
+        const newStatut = event.target.value;
+        if (!newStatut) return;
+
+        const statutLabels = {
+            en_attente: 'EN ATTENTE',
+            confirmee: 'CONFIRMÉE',
+            livree: 'LIVRÉE',
+            annulee: 'ANNULÉE'
+        };
+        const label = statutLabels[newStatut] || newStatut.toUpperCase();
+        const count = group.lines ? group.lines.length : 1;
+
+        const ok = window.confirm(`Passer les ${count} lignes en ${label} ?`);
+        event.target.value = '';
+
+        if (!ok) return;
+
+        try {
+            const res = await fetch(`/api/admin/precommandes/ref/${encodeURIComponent(group.commande_ref)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ statut: newStatut })
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                this.showToast(`[${res.status}] ${data.message || 'Échec de mise à jour groupée.'}`, 'error');
+            } else {
+                this.showToast(`Statut mis à jour pour ${count} ligne(s) : ${label}`);
+                await this.fetchPrecommandes();
+            }
+        } catch (err) {
+            console.error('Erreur update group statut :', err);
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
         }
     },
 
@@ -227,28 +333,28 @@ Alpine.data('adminApp', () => ({
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-                this.showToast(data.message || 'Erreur lors de la suppression.', 'error');
+                this.showToast(`[${res.status}] ${data.message || 'Erreur lors de la suppression.'}`, 'error');
             } else {
                 this.showToast(`Précommande #${this.orderToDelete.id} supprimée.`);
                 this.closeDeleteModal();
-                await this.fetchPrecommandes();
             }
         } catch (err) {
             console.error('Erreur suppression :', err);
-            this.showToast('Erreur réseau lors de la suppression.', 'error');
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
         } finally {
             this.deleteLoading = false;
+            await this.fetchPrecommandes();
         }
     },
 
     openDeleteClientModal(order) {
         if (!order || !order.client_id) return;
-        // Count how many orders this client has in current list
         const clientOrders = this.precommandes.filter(o => o.client_id === order.client_id);
         this.clientToDelete = {
             id: order.client_id,
             nom: order.nom,
-            contact: order.contact,
+            email: order.email || order.contact || '-',
+            telephone: order.telephone || '-',
             formattedId: this.formatClientId(order.client_id),
             count: clientOrders.length || 1
         };
@@ -272,30 +378,33 @@ Alpine.data('adminApp', () => ({
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-                this.showToast(data.message || 'Erreur lors de la suppression du client.', 'error');
+                this.showToast(`[${res.status}] ${data.message || 'Erreur lors de la suppression du client.'}`, 'error');
             } else {
                 this.showToast(data.message || `Client #${this.clientToDelete.formattedId} et ses commandes supprimés.`);
                 this.closeDeleteClientModal();
-                await this.fetchPrecommandes();
             }
         } catch (err) {
             console.error('Erreur suppression client RGPD :', err);
-            this.showToast('Erreur réseau lors de la suppression du client.', 'error');
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
         } finally {
             this.deleteClientLoading = false;
+            await this.fetchPrecommandes();
         }
     },
 
     confirmToggleStatus() {
+        this.statusToggleError = '';
         this.confirmToggleModalOpen = true;
     },
 
     closeConfirmToggleModal() {
         this.confirmToggleModalOpen = false;
+        this.statusToggleError = '';
     },
 
     async executeToggleStatus() {
         this.statusLoading = true;
+        this.statusToggleError = '';
         try {
             const nextStatus = !this.statusOuvert;
             const res = await fetch('/api/admin/precommandes/status', {
@@ -309,16 +418,19 @@ Alpine.data('adminApp', () => ({
 
             const data = await res.json();
             if (!res.ok || !data.success) {
-                this.showToast(data.message || 'Erreur lors du changement de statut.', 'error');
+                this.statusToggleError = `[${res.status}] ${data.message || 'Erreur lors du changement de statut.'}`;
+                this.showToast(this.statusToggleError, 'error');
             } else {
-                this.statusOuvert = nextStatus;
-                this.showToast(nextStatus ? 'Précommandes ouvertes aux visiteurs.' : 'Précommandes fermées aux visiteurs.');
-                this.closeConfirmToggleModal();
+                this.statusOuvert = Boolean(data.ouvert !== undefined ? data.ouvert : nextStatus);
+                if (data.message !== undefined) this.messageFermeture = data.message;
+                this.showToast(this.statusOuvert ? 'Précommandes ouvertes aux visiteurs.' : 'Précommandes fermées aux visiteurs.');
                 await this.fetchStatus();
+                this.closeConfirmToggleModal();
             }
         } catch (err) {
             console.error('Erreur toggle statut :', err);
-            this.showToast('Erreur réseau lors de la mise à jour.', 'error');
+            this.statusToggleError = `Erreur réseau : ${err.message}`;
+            this.showToast(this.statusToggleError, 'error');
         } finally {
             this.statusLoading = false;
         }
@@ -347,17 +459,295 @@ Alpine.data('adminApp', () => ({
 
             const data = await res.json();
             if (!res.ok || !data.success) {
-                this.showToast(data.message || 'Erreur lors de l\'enregistrement du message.', 'error');
+                this.showToast(`[${res.status}] ${data.message || 'Erreur lors de l\'enregistrement du message.'}`, 'error');
             } else {
                 this.showToast('Message de fermeture enregistré.');
                 await this.fetchStatus();
             }
         } catch (err) {
             console.error('Erreur save message :', err);
-            this.showToast('Erreur réseau lors de l\'enregistrement.', 'error');
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
         } finally {
             this.statusLoading = false;
         }
+    },
+
+    // ─── Catalogue Produits Methods ───────────────────────────────────────────
+
+    async fetchProducts() {
+        this.productsLoading = true;
+        try {
+            const res = await fetch('/api/admin/products');
+            if (res.status === 401) {
+                this.authenticated = false;
+                return;
+            }
+            const data = await res.json();
+            if (data.success) {
+                this.products = data.products || [];
+            } else {
+                this.showToast(`[${res.status}] ${data.message || 'Erreur lors du chargement des produits.'}`, 'error');
+            }
+        } catch (err) {
+            console.error('Erreur chargement catalogue admin :', err);
+            this.showToast(`Erreur réseau catalogue : ${err.message}`, 'error');
+        } finally {
+            this.productsLoading = false;
+        }
+    },
+
+    openProductModal(product = null) {
+        this.productFormError = '';
+        this.sizeInput = '';
+        if (product) {
+            this.productForm = {
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                description: product.description || '',
+                sizes: Array.isArray(product.sizes) && product.sizes.length > 0 ? [...product.sizes] : ['Taille unique'],
+                featured: product.featured === 1,
+                actif: product.actif,
+                imageFile: null,
+                imagePreview: null,
+                currentImage: product.image || null
+            };
+        } else {
+            this.productForm = {
+                id: null,
+                name: '',
+                price: '',
+                description: '',
+                sizes: ['Taille unique'],
+                featured: false,
+                actif: 1,
+                imageFile: null,
+                imagePreview: null,
+                currentImage: null
+            };
+        }
+        this.productModalOpen = true;
+    },
+
+    closeProductModal() {
+        this.productModalOpen = false;
+        this.productFormError = '';
+    },
+
+    addSize() {
+        const val = this.sizeInput.trim();
+        if (!val) return;
+        if (val.length > 30) {
+            this.productFormError = 'Une taille ne doit pas dépasser 30 caractères.';
+            return;
+        }
+        if (!this.productForm.sizes.includes(val)) {
+            this.productForm.sizes.push(val);
+        }
+        this.sizeInput = '';
+        this.productFormError = '';
+    },
+
+    removeSize(index) {
+        this.productForm.sizes.splice(index, 1);
+        if (this.productForm.sizes.length === 0) {
+            this.productForm.sizes.push('Taille unique');
+        }
+    },
+
+    handleImageSelect(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            this.productFormError = 'Image trop volumineuse (max 2 Mo).';
+            return;
+        }
+
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.type)) {
+            this.productFormError = 'Format image invalide. JPEG, PNG ou WebP uniquement (SVG interdit).';
+            return;
+        }
+
+        this.productForm.imageFile = file;
+        this.productForm.imagePreview = URL.createObjectURL(file);
+        this.productFormError = '';
+    },
+
+    async saveProduct() {
+        this.productFormError = '';
+
+        if (!this.productForm.name || !this.productForm.name.trim()) {
+            this.productFormError = 'Le nom du produit est obligatoire (1 à 60 caractères).';
+            return;
+        }
+        if (this.productForm.name.trim().length > 60) {
+            this.productFormError = 'Le nom ne doit pas dépasser 60 caractères.';
+            return;
+        }
+
+        const priceNum = parseFloat(this.productForm.price);
+        if (isNaN(priceNum) || priceNum <= 0 || priceNum > 100000) {
+            this.productFormError = 'Le prix doit être un nombre strictement supérieur à 0 (max 100 000).';
+            return;
+        }
+
+        if (!this.productForm.sizes || this.productForm.sizes.length === 0) {
+            this.productFormError = 'Au moins une taille est requise (ou "Taille unique").';
+            return;
+        }
+
+        this.productSaving = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('name', this.productForm.name.trim());
+            formData.append('price', priceNum);
+            formData.append('description', (this.productForm.description || '').trim());
+            formData.append('sizes', JSON.stringify(this.productForm.sizes));
+            formData.append('featured', this.productForm.featured ? '1' : '0');
+            if (this.productForm.imageFile) {
+                formData.append('image', this.productForm.imageFile);
+            }
+
+            const url = this.productForm.id
+                ? `/api/admin/products/${this.productForm.id}`
+                : '/api/admin/products';
+            const method = this.productForm.id ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                this.productFormError = `[${res.status}] ${data.message || 'Erreur lors de l\'enregistrement du produit.'}`;
+            } else {
+                this.closeProductModal();
+                this.showToast(this.productForm.id ? 'Produit modifié avec succès !' : 'Nouveau produit ajouté !');
+            }
+        } catch (err) {
+            console.error('Erreur enregistrement produit :', err);
+            this.productFormError = `Erreur réseau : ${err.message}`;
+        } finally {
+            this.productSaving = false;
+            await this.fetchProducts();
+        }
+    },
+
+    async toggleActif(product) {
+        try {
+            const newActif = product.actif === 1 ? 0 : 1;
+            const res = await fetch(`/api/admin/products/${product.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ actif: newActif })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                this.showToast(`[${res.status}] ${data.message || 'Erreur lors du changement de statut.'}`, 'error');
+            } else {
+                this.showToast(`Produit "${product.name}" ${newActif === 1 ? 'réactivé' : 'archivé'}.`);
+            }
+        } catch (err) {
+            console.error('Erreur toggle actif :', err);
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
+        } finally {
+            await this.fetchProducts();
+        }
+    },
+
+    async toggleFeatured(product) {
+        try {
+            const newFeatured = product.featured === 1 ? 0 : 1;
+            const res = await fetch(`/api/admin/products/${product.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ featured: newFeatured })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                this.showToast(`[${res.status}] ${data.message || 'Erreur lors de la mise en vedette.'}`, 'error');
+            } else {
+                this.showToast(newFeatured === 1 ? `"${product.name}" est maintenant le produit vedette.` : 'Produit vedette retiré.');
+            }
+        } catch (err) {
+            console.error('Erreur toggle vedette :', err);
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
+        } finally {
+            await this.fetchProducts();
+        }
+    },
+
+    async moveProductOrder(product, direction) {
+        try {
+            const res = await fetch(`/api/admin/products/${product.id}/order`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                this.showToast(`[${res.status}] ${data.message || 'Erreur déplacement ordre.'}`, 'error');
+            }
+        } catch (err) {
+            console.error('Erreur ordre :', err);
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
+        } finally {
+            await this.fetchProducts();
+        }
+    },
+
+    openDeleteProductModal(product) {
+        this.productToDelete = product;
+        this.deleteProductError = '';
+        this.deleteProductHasOrders = false;
+        this.deleteProductOrderCount = 0;
+        this.deleteProductModalOpen = true;
+    },
+
+    closeDeleteProductModal() {
+        this.deleteProductModalOpen = false;
+        this.productToDelete = null;
+        this.deleteProductError = '';
+        this.deleteProductHasOrders = false;
+    },
+
+    async deleteProduct() {
+        if (!this.productToDelete) return;
+        this.deleteProductLoading = true;
+        this.deleteProductError = '';
+        try {
+            const res = await fetch(`/api/admin/products/${this.productToDelete.id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (res.status === 409) {
+                this.deleteProductHasOrders = true;
+                this.deleteProductOrderCount = data.orderCount || 1;
+                this.deleteProductError = data.message || 'Ce produit est lié à des précommandes et ne peut pas être supprimé.';
+            } else if (!res.ok || !data.success) {
+                this.deleteProductError = `[${res.status}] ${data.message || 'Erreur lors de la suppression.'}`;
+            } else {
+                this.showToast('Produit et image supprimés avec succès.');
+                this.closeDeleteProductModal();
+            }
+        } catch (err) {
+            console.error('Erreur suppression produit :', err);
+            this.deleteProductError = `Erreur réseau : ${err.message}`;
+        } finally {
+            this.deleteProductLoading = false;
+            await this.fetchProducts();
+        }
+    },
+
+    async archiveProductInstead() {
+        if (!this.productToDelete) return;
+        const target = this.productToDelete;
+        this.closeDeleteProductModal();
+        await this.toggleActif(target);
     },
 
     exportCSV() {

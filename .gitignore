@@ -21,6 +21,7 @@ dist-ssr
 *.sqlite-journal
 *.db
 backend/data/
+backend/uploads/
 
 .vscode/*
 !.vscode/extensions.json

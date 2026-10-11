@@ -1,35 +1,57 @@
 # ACELSPACE
 
-Site web du club.
+Site web et système de précommandes du club ACELSPACE.
 
-## Prérequis
+---
 
-- Node.js 18 ou supérieur
-- npm
+## 🚀 Prérequis
 
-## Installation
+- **Node.js** 18 ou supérieur
+- **npm**
 
-```bash
-npm install
-cp .env.example .env
-```
+---
 
-Renseigner les valeurs dans `.env`.
+## ⚙️ Installation & Configuration
 
-## Développement
+1. **Installer les dépendances :**
+   ```bash
+   npm install
+   ```
+
+2. **Créer le fichier d'environnement :**
+   ```bash
+   cp .env.example .env
+   ```
+   *(ou sous Windows PowerShell : `Copy-Item .env.example .env`)*
+
+3. **Variables dans `.env` :**
+   - `PORT=3000` : Port du serveur API backend.
+   - `COOKIE_SECRET` : Clé secrète pour les cookies de session admin.
+   - `ADMIN_PASSWORD_HASH` : Hash bcrypt du mot de passe admin (par défaut : `admin123`).
+   - `ALLOWED_ORIGIN=http://localhost:5173` : Origine autorisée pour le dev.
+
+---
+
+## 💻 Démarrage en Développement
+
+Lance simultanément le backend Express et le frontend Vite :
 
 ```bash
 npm run dev
 ```
 
-## Build
+- **Boutique publique :** [http://localhost:5173](http://localhost:5173)
+- **Panel d'administration :** [http://localhost:5173/admin.html](http://localhost:5173/admin.html)  
+  *(Mot de passe par défaut : `admin123`)*
+- **API Backend :** [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 📦 Build Production
 
 ```bash
 npm run build
 ```
 
-Le résultat est généré dans `dist/`.
-
-## Licence
-
-Voir le fichier `LICENSE`.
+Les fichiers statiques optimisés sont générés dans le dossier `dist/`.
+Le serveur backend peut être démarré seul via `npm run start`.

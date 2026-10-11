@@ -1,48 +1,33 @@
-export const PRODUCTS_CATALOG = {
-    'club-shirt': {
-        id: 'club-shirt',
-        name: 'T-shirt',
-        price: 30,
-        sizes: ['M', 'L', 'XL', 'XXL']
-    },
-    'club-pen': {
-        id: 'club-pen',
-        name: 'Stylo',
-        price: 10,
-        sizes: ['S', 'M', 'L', 'XL', 'Taille unique']
-    },
-    'club-mousepad': {
-        id: 'club-mousepad',
-        name: 'Tapis de souris',
-        price: 18,
-        sizes: ['Taille unique']
-    },
-    'usb-key': {
-        id: 'usb-key',
-        name: 'Cle usb',
-        price: 15,
-        sizes: ['32 GO', 'Taille unique']
-    }
-};
+/**
+ * products.js — helpers to look up products from the SQLite database.
+ * The static PRODUCTS_CATALOG is kept for backward compatibility during migration
+ * but findProduct now reads from the DB.
+ */
+import db from './database.js';
 
 /**
- * Finds a product from the catalog by ID or exact name
+ * Find an active product by its numeric DB id or by exact name match.
+ * Returns { id, name, price, sizes } or null.
  */
 export function findProduct(identifier) {
     if (!identifier) return null;
-    const cleanId = String(identifier).trim().toLowerCase();
-    
-    // Direct ID match
-    if (PRODUCTS_CATALOG[cleanId]) {
-        return PRODUCTS_CATALOG[cleanId];
+    const clean = String(identifier).trim();
+
+    // Try numeric id first
+    const byId = db.prepare(
+        `SELECT id, name, price, sizes FROM products WHERE actif = 1 AND id = ?`
+    ).get(Number(clean));
+    if (byId) {
+        return { ...byId, sizes: JSON.parse(byId.sizes || '["Taille unique"]') };
     }
-    
-    // Name match
-    for (const prod of Object.values(PRODUCTS_CATALOG)) {
-        if (prod.name.toLowerCase() === cleanId || prod.id.toLowerCase() === cleanId) {
-            return prod;
-        }
+
+    // Try exact name match (case-insensitive, legacy support)
+    const byName = db.prepare(
+        `SELECT id, name, price, sizes FROM products WHERE actif = 1 AND LOWER(name) = LOWER(?)`
+    ).get(clean);
+    if (byName) {
+        return { ...byName, sizes: JSON.parse(byName.sizes || '["Taille unique"]') };
     }
-    
+
     return null;
 }

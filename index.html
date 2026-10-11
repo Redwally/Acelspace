@@ -80,21 +80,42 @@
                     <button @click="isContactOpen = true" class="hover:text-sky-700 transition-colors">CONTACT</button>
                 </nav>
 
-                <!-- Search Icon & Toggle -->
-                <div class="relative shrink-0 flex items-center">
-                    <template x-if="searchActive">
-                        <input type="text" x-model="searchQuery" placeholder="Chercher..." x-ref="searchInput"
-                            @keyup.escape="searchActive = false; searchQuery = ''"
-                            class="w-36 sm:w-48 px-3 py-1.5 text-xs sm:text-sm border-2 border-slate-900 rounded bg-white focus:outline-none mr-2">
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <!-- Bouton Permanent Ma Précommande ou Bloc Précommandes Fermées -->
+                    <template x-if="preorderStatus.ouvert">
+                        <button @click="openCartModal()"
+                            class="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-900 text-white pill-border font-black text-xs sm:text-sm uppercase tracking-wider hover:bg-slate-800 transition-colors flex items-center gap-2 cursor-pointer shadow-xs whitespace-nowrap">
+                            <span>📦</span>
+                            <span class="hidden sm:inline">MA PRÉCOMMANDE</span>
+                            <span class="sm:hidden">PANIER</span>
+                            <span class="px-1.5 py-0.5 bg-white text-slate-900 rounded-full text-[11px] font-black leading-none" x-text="cartCount"></span>
+                        </button>
                     </template>
-                    <button @click="toggleSearch()" class="p-1.5 hover:opacity-75 transition-opacity"
-                        title="Rechercher">
-                        <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" stroke-width="2.8"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </button>
+                    <template x-if="!preorderStatus.ouvert">
+                        <div class="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-200 text-slate-500 pill-border font-black text-xs sm:text-sm uppercase tracking-wider cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                             :title="preorderStatus.message || 'Les précommandes sont actuellement fermées.'">
+                            <span>🔒</span>
+                            <span class="hidden sm:inline">PRÉCOMMANDES FERMÉES</span>
+                            <span class="sm:hidden">FERMÉ</span>
+                        </div>
+                    </template>
+
+                    <!-- Search Icon & Toggle -->
+                    <div class="relative shrink-0 flex items-center">
+                        <template x-if="searchActive">
+                            <input type="text" x-model="searchQuery" placeholder="Chercher..." x-ref="searchInput"
+                                @keyup.escape="searchActive = false; searchQuery = ''"
+                                class="w-32 sm:w-48 px-3 py-1.5 text-xs sm:text-sm border-2 border-slate-900 rounded bg-white focus:outline-none mr-2">
+                        </template>
+                        <button @click="toggleSearch()" class="p-1.5 hover:opacity-75 transition-opacity"
+                            title="Rechercher">
+                            <svg class="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" stroke-width="2.8"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -114,57 +135,88 @@
                 </p>
             </div>
 
-            <!-- Top Right Product Card (Grey Logo Tee) -->
-            <div class="md:col-span-4 bg-card-bg card-border flex flex-col justify-between overflow-hidden">
-                <!-- Image Box -->
-                <div
-                    class="bg-card-bg p-4 h-64 sm:h-72 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
-                    <img :src="topProduct.image" :alt="topProduct.name"
-                        class="max-h-full max-w-full object-contain drop-shadow-md rounded-md"
-                        onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+            <!-- Top Right Product Card (Featured) -->
+            <div class="md:col-span-4 bg-card-bg card-border flex flex-col justify-between overflow-hidden min-h-[220px]">
+                <!-- Loading State -->
+                <div x-show="catalogLoading" class="flex-1 flex flex-col items-center justify-center p-8 space-y-3">
+                    <div class="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="font-bold text-xs uppercase text-slate-700">Chargement...</p>
                 </div>
-                <!-- Card Info Label -->
-                <div class="p-3 sm:p-4 lg:p-5 bg-card-bg flex items-center justify-between gap-3 shrink-0">
-                    <div>
-                        <h3 class="font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
-                            x-text="topProduct.name"></h3>
-                        <p class="font-black text-sm sm:text-base lg:text-lg text-slate-900"
-                            x-text="'$' + topProduct.price"></p>
-                    </div>
-                    <button @click="openProductModal(topProduct)"
-                        class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
-                        <span
-                            class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
-                        <!-- Tintin Rocket -->
-                        <div
-                            class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
-                            <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
-                                <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
-                                <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
-                                <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
-                                <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
-                                <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
-                                <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
-                                <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
-                                <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
-                                <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
-                                <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
-                                <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
-                                <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827"
-                                    stroke-width="1.2" fill="none" />
-                            </svg>
+
+                <!-- Error State -->
+                <div x-show="!catalogLoading && catalogError" class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-2">
+                    <p class="font-bold text-xs text-red-600 uppercase">Indisponible</p>
+                </div>
+
+                <!-- Product Content -->
+                <template x-if="!catalogLoading && !catalogError && topProduct">
+                    <div class="flex flex-col justify-between h-full">
+                        <!-- Image Box -->
+                        <div class="bg-card-bg p-4 h-64 sm:h-72 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
+                            <img :src="topProduct.image" :alt="topProduct.name"
+                                class="max-h-full max-w-full object-contain drop-shadow-md rounded-md"
+                                onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
                         </div>
-                    </button>
-                </div>
+                        <!-- Card Info Label -->
+                        <div class="p-3 sm:p-4 lg:p-5 bg-card-bg flex items-center justify-between gap-3 shrink-0">
+                            <div>
+                                <h3 class="font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
+                                    x-text="topProduct.name"></h3>
+                                <p class="font-black text-sm sm:text-base lg:text-lg text-slate-900"
+                                    x-text="'$' + topProduct.price"></p>
+                            </div>
+                            <button @click="openProductModal(topProduct)"
+                                class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
+                                <span
+                                    class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
+                                <!-- Tintin Rocket -->
+                                <div
+                                    class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
+                                    <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
+                                        <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
+                                        <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
+                                        <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
+                                        <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
+                                        <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
+                                        <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
+                                        <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
+                                        <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
+                                        <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
+                                        <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
+                                        <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
+                                        <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827"
+                                            stroke-width="1.2" fill="none" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
 
         <!-- BOTTOM PRODUCTS GRID -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <!-- Loading State -->
+            <div x-show="catalogLoading" class="col-span-full py-12 bg-card-bg card-border text-center space-y-3">
+                <div class="inline-block w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
+                <p class="font-black text-sm text-slate-800 uppercase">Chargement du catalogue...</p>
+            </div>
+
+            <!-- Error State -->
+            <div x-show="!catalogLoading && catalogError" class="col-span-full py-12 bg-card-bg card-border text-center space-y-3">
+                <p class="font-black text-lg text-red-600 uppercase">Erreur de catalogue</p>
+                <p class="text-sm text-slate-600 font-semibold" x-text="catalogError"></p>
+                <button @click="loadCatalog()"
+                    class="px-5 py-2 bg-slate-900 text-white font-bold text-xs uppercase pill-border hover:bg-sky-800 transition-colors">
+                    Réessayer
+                </button>
+            </div>
+
             <!-- Message aucun résultat -->
-            <div x-show="filteredProducts.length === 0"
+            <div x-show="!catalogLoading && !catalogError && filteredProducts.length === 0"
                 class="col-span-full py-12 bg-card-bg card-border text-center space-y-3">
                 <p class="font-black text-lg text-slate-800 uppercase">Aucun produit trouvé</p>
                 <p class="text-sm text-slate-600 font-semibold">Essayez un autre mot-clé pour votre recherche.</p>
@@ -278,10 +330,26 @@
                     </a>
                 </div>
             </div>
-        </footer>
-    </main>
+     <!-- ── FLOATING MOBILE PREORDER BUTTON ─────────────────────────────────── -->
+    <div class="fixed bottom-4 right-4 z-40 md:hidden">
+        <template x-if="preorderStatus.ouvert">
+            <button @click="openCartModal()"
+                class="px-4 py-3 bg-slate-900 text-white pill-border font-black text-xs uppercase tracking-wider shadow-2xl flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform">
+                <span class="text-base">📦</span>
+                <span>MA PRÉCOMMANDE</span>
+                <span class="px-2 py-0.5 bg-white text-slate-900 rounded-full text-xs font-black leading-none" x-text="cartCount"></span>
+            </button>
+        </template>
+        <template x-if="!preorderStatus.ouvert">
+            <div class="px-4 py-2.5 bg-slate-200 text-slate-500 pill-border font-black text-xs uppercase tracking-wider shadow-xl flex items-center gap-2 cursor-not-allowed"
+                 :title="preorderStatus.message || 'Les précommandes sont actuellement fermées.'">
+                <span>🔒</span>
+                <span>PRÉCOMMANDES FERMÉES</span>
+            </div>
+        </template>
+    </div>
 
-    <!-- ── PRODUCT DETAIL & PRECOMMANDE MODAL ────────────────────────────── -->
+    <!-- ── PRODUCT DETAIL MODAL (AJOUT AU PANIER SANS FORMULAIRE PERSONNEL) ── -->
     <div x-show="isProductModalOpen" x-cloak @keydown.escape.window="isProductModalOpen = false"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
@@ -291,202 +359,389 @@
             class="bg-card-bg card-border w-full max-w-lg p-5 sm:p-6 space-y-4 relative shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
 
             <button @click="isProductModalOpen = false"
-                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center z-10"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center z-10 cursor-pointer"
                 title="Fermer">
                 ✕
             </button>
 
             <template x-if="activeProduct">
-                <div>
-                    <!-- ── ÉTAPE 1 : FICHE PRODUIT SEULE ────────────────────────── -->
-                    <div x-show="step === 1" x-transition:enter="transition ease-out duration-200 transform"
-                        x-transition:enter-start="opacity-0 translate-y-2"
-                        x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+                <div class="space-y-4">
+                    <!-- Image Box -->
+                    <div class="bg-card-bg card-border p-4 h-64 sm:h-72 flex items-center justify-center overflow-hidden">
+                        <img :src="activeProduct.image" :alt="activeProduct.name"
+                            class="max-h-full max-w-full object-contain rounded-md drop-shadow-md"
+                            onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                    </div>
 
-                        <!-- Image Box -->
-                        <div
-                            class="bg-card-bg card-border p-4 h-64 sm:h-72 flex items-center justify-center overflow-hidden">
-                            <img :src="activeProduct.image" :alt="activeProduct.name"
-                                class="max-h-full max-w-full object-contain rounded-md drop-shadow-md"
-                                onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                    <!-- Product Info -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900"
+                                x-text="activeProduct.name"></h2>
+                            <span class="text-xl sm:text-2xl font-black text-slate-900"
+                                x-text="'$' + activeProduct.price"></span>
                         </div>
 
-                        <!-- Product Info -->
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900"
-                                    x-text="activeProduct.name"></h2>
-                                <span class="text-xl sm:text-2xl font-black text-slate-900"
-                                    x-text="'$' + activeProduct.price"></span>
+                        <p class="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed"
+                            x-text="activeProduct.description"></p>
+                    </div>
+
+                    <!-- Options d'ajout : Taille & Quantité -->
+                    <div class="p-4 bg-white card-border space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- Choix de la taille -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-black uppercase text-slate-700">Taille :</label>
+                                <select x-model="selectedTaille"
+                                    class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer">
+                                    <template x-for="size in activeProduct.sizes" :key="size">
+                                        <option :value="size" x-text="size"></option>
+                                    </template>
+                                </select>
                             </div>
 
-                            <p class="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed"
-                                x-text="activeProduct.description"></p>
-
-                            <!-- Available sizes pills -->
-                            <div class="pt-1 flex items-center gap-1.5 flex-wrap">
-                                <span class="text-[11px] font-black uppercase text-slate-600 mr-1">Tailles disponibles
-                                    :</span>
-                                <template x-for="size in activeProduct.sizes" :key="size">
-                                    <span
-                                        class="px-2 py-0.5 bg-white pill-border text-[10px] sm:text-xs font-black uppercase text-slate-900"
-                                        x-text="size"></span>
-                                </template>
+                            <!-- Choix de la quantité -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-black uppercase text-slate-700">Quantité (1-10) :</label>
+                                <input type="number" min="1" max="10" x-model.number="selectedQuantite"
+                                    class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
                             </div>
                         </div>
 
-                        <!-- Action Button Step 1 -> Step 2 -->
-                        <div class="pt-2">
-                            <button @click="goToStep(2)"
-                                class="w-full py-3.5 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
-                                <span>PRÉCOMMANDER</span>
+                        <!-- Feedback visuel après ajout -->
+                        <div x-show="justAddedFeedback" x-cloak
+                             x-transition:enter="transition ease-out duration-200 transform"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             class="p-2.5 bg-emerald-100 border-2 border-emerald-900 rounded font-black text-xs text-emerald-950 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <span>✓</span>
+                                <span>Ajouté à votre précommande !</span>
+                            </span>
+                            <button @click="isProductModalOpen = false; openCartModal()"
+                                    class="underline font-black uppercase text-[11px] hover:text-emerald-800 cursor-pointer">
+                                Voir le panier →
                             </button>
                         </div>
                     </div>
 
-                    <!-- ── ÉTAPE 2 : FORMULAIRE DE PRÉCOMMANDE ───────────────────── -->
-                    <div x-show="step === 2" x-transition:enter="transition ease-out duration-200 transform"
-                        x-transition:enter-start="opacity-0 translate-y-2"
-                        x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
-
-                        <!-- Mini-récap Produit en haut -->
-                        <div class="flex items-center justify-between p-3 bg-white card-border">
-                            <div class="flex items-center gap-3">
-                                <div
-                                    class="w-12 h-12 bg-card-bg card-border p-1 flex items-center justify-center shrink-0">
-                                    <img :src="activeProduct.image" :alt="activeProduct.name"
-                                        class="max-h-full max-w-full object-contain rounded">
+                    <!-- Action : Ajouter au panier OU Précommandes fermées -->
+                    <div class="pt-1">
+                        <template x-if="preorderStatus.ouvert">
+                            <div class="space-y-2">
+                                <button @click="addToCart(activeProduct)"
+                                    class="w-full py-3.5 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                                    <span>🛒</span>
+                                    <span>AJOUTER À MA PRÉCOMMANDE</span>
+                                </button>
+                                <div class="text-center pt-1" x-show="cartCount > 0">
+                                    <button @click="isProductModalOpen = false; openCartModal()"
+                                            class="text-xs font-black text-slate-800 underline hover:text-sky-700 uppercase cursor-pointer">
+                                        Voir ma précommande (<span x-text="cartCount"></span> article<span x-show="cartCount > 1">s</span>) →
+                                    </button>
                                 </div>
-                                <div>
-                                    <h3 class="font-black text-xs sm:text-sm uppercase text-slate-900"
-                                        x-text="activeProduct.name"></h3>
-                                    <span class="text-[10px] font-bold text-slate-600 uppercase">Sans paiement
-                                        immédiat</span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="font-black text-sm sm:text-base text-slate-900"
-                                    x-text="'$' + activeProduct.price + ' / u.'"></span>
-                            </div>
-                        </div>
-
-                        <!-- Bouton Retour Étape 1 -->
-                        <button type="button" @click="goToStep(1)"
-                            class="text-xs font-black uppercase text-slate-900 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
-                            <span>←</span> RETOUR À LA FICHE
-                        </button>
-
-                        <!-- Error Message Banner -->
-                        <template x-if="orderError">
-                            <div
-                                class="p-3 bg-red-100 border-2 border-red-900 rounded-md text-red-950 text-xs font-bold flex items-center gap-2">
-                                <span>⚠️</span>
-                                <span x-text="orderError"></span>
                             </div>
                         </template>
 
-                        <!-- Pre-order Form -->
-                        <form @submit.prevent="submitPrecommande()" class="space-y-3.5">
-                            <!-- Nom & Prénom -->
-                            <div class="space-y-1">
-                                <label class="block text-[11px] font-black uppercase text-slate-700">Nom & Prénom <span
-                                        class="text-red-600">*</span></label>
-                                <input type="text" x-model="orderForm.nom" required placeholder="ex: Alex Dupont"
-                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                        <template x-if="!preorderStatus.ouvert">
+                            <div class="p-4 bg-slate-200 border-2 border-slate-900 rounded text-center space-y-1">
+                                <p class="font-black text-xs sm:text-sm uppercase text-slate-800 flex items-center justify-center gap-2">
+                                    <span>🔒</span> PRÉCOMMANDES FERMÉES
+                                </p>
+                                <p class="text-[11px] font-semibold text-slate-600"
+                                   x-text="preorderStatus.message || 'Les précommandes sont actuellement terminées.'"></p>
                             </div>
-
-                            <!-- Contact : Email ou Instagram -->
-                            <div class="space-y-1">
-                                <label class="block text-[11px] font-black uppercase text-slate-700">Contact (Email ou
-                                    Instagram) <span class="text-red-600">*</span></label>
-                                <input type="text" x-model="orderForm.contact" required
-                                    placeholder="ex: alex@email.com ou @alex_insta"
-                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
-                            </div>
-
-                            <!-- 2 Columns : Taille & Quantité -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <!-- Taille -->
-                                <div class="space-y-1">
-                                    <label class="block text-[11px] font-black uppercase text-slate-700">Taille <span
-                                            class="text-red-600">*</span></label>
-                                    <select x-model="orderForm.taille"
-                                        class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer">
-                                        <template x-for="size in activeProduct.sizes" :key="size">
-                                            <option :value="size" x-text="size"></option>
-                                        </template>
-                                    </select>
-                                </div>
-
-                                <!-- Quantité -->
-                                <div class="space-y-1">
-                                    <label class="block text-[11px] font-black uppercase text-slate-700">Quantité (1-10)
-                                        <span class="text-red-600">*</span></label>
-                                    <input type="number" min="1" max="10" x-model.number="orderForm.quantite" required
-                                        class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
-                                </div>
-                            </div>
-
-                            <!-- Estimation du total en direct -->
-                            <div class="p-3 bg-white card-border flex items-center justify-between">
-                                <span class="font-black text-xs uppercase text-slate-800">Estimation du total :</span>
-                                <span class="font-black text-lg text-slate-900"
-                                    x-text="'$' + estimatedTotalPrice"></span>
-                            </div>
-
-                            <!-- RGPD Checkbox -->
-                            <div class="flex items-start gap-2.5 pt-1">
-                                <input type="checkbox" id="rgpdConsent" x-model="orderForm.rgpdConsent" required
-                                    class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
-                                <label for="rgpdConsent"
-                                    class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
-                                    J'accepte que mes coordonnées soient utilisées par le club ACELSPACE pour me
-                                    recontacter au sujet de cette précommande.
-                                    <button type="button" @click="isPrivacyModalOpen = true"
-                                        class="underline font-black text-slate-900 hover:text-slate-700">
-                                        Politique de confidentialité
-                                    </button>.
-                                </label>
-                            </div>
-
-                            <!-- Submit Button -->
-                            <button type="submit" :disabled="orderSubmitting"
-                                class="w-full py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                                <template x-if="orderSubmitting">
-                                    <span class="inline-block animate-spin">⏳</span>
-                                </template>
-                                <span
-                                    x-text="orderSubmitting ? 'ENREGISTREMENT...' : 'CONFIRMER LA PRÉCOMMANDE'"></span>
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- ── ÉTAPE 3 : CONFIRMATION APRÈS POST ────────────────────── -->
-                    <div x-show="step === 3" x-transition:enter="transition ease-out duration-200 transform"
-                        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                        class="space-y-5 text-center py-4">
-
-                        <div
-                            class="w-14 h-14 bg-slate-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-black shadow-md">
-                            ✓
-                        </div>
-
-                        <div class="space-y-2">
-                            <h3 class="text-lg font-black uppercase text-slate-900">Précommande Enregistrée !</h3>
-                            <p class="text-xs sm:text-sm text-slate-700 font-semibold" x-text="orderSuccess"></p>
-                        </div>
-
-                        <div class="p-3 bg-white card-border text-xs font-bold text-slate-800">
-                            Précommande sans paiement en ligne, le club vous recontactera très prochainement.
-                        </div>
-
-                        <button @click="isProductModalOpen = false"
-                            class="w-full py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 transition-colors">
-                            FERMER
-                        </button>
+                        </template>
                     </div>
                 </div>
             </template>
+        </div>
+    </div>
+
+    <!-- ── PANIER DE PRÉCOMMANDE EN 3 ÉTAPES (MODALE PRINCIPALE) ───────────── -->
+    <div x-show="isCartModalOpen" x-cloak @keydown.escape.window="closeCartModal()"
+        class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+        x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100">
+
+        <div @click.away="closeCartModal()"
+            class="bg-card-bg card-border w-full max-w-xl p-5 sm:p-6 space-y-5 relative shadow-2xl my-8 max-h-[92vh] overflow-y-auto">
+
+            <!-- Bouton Fermer Modale -->
+            <button @click="closeCartModal()"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center z-10 cursor-pointer"
+                title="Fermer">
+                ✕
+            </button>
+
+            <!-- Titre et Barre d'étapes -->
+            <div class="space-y-3 border-b-2 border-slate-900 pb-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📦</span>
+                    <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900">
+                        Ma Précommande
+                    </h2>
+                </div>
+
+                <!-- Step indicators -->
+                <div class="grid grid-cols-3 gap-2 text-center text-[10px] sm:text-xs font-black uppercase">
+                    <div :class="cartStep === 1 ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'"
+                         class="py-1.5 pill-border transition-colors">
+                        1. Récapitulatif
+                    </div>
+                    <div :class="cartStep === 2 ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'"
+                         class="py-1.5 pill-border transition-colors">
+                        2. Mes Infos
+                    </div>
+                    <div :class="cartStep === 3 ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'"
+                         class="py-1.5 pill-border transition-colors">
+                        3. Confirmation
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ÉTAPE 1 : RÉCAPITULATIF DU PANIER ───────────────────────────── -->
+            <div x-show="cartStep === 1" x-transition:enter="transition ease-out duration-150"
+                 class="space-y-4">
+
+                <!-- Warning if items were removed or unavailable -->
+                <template x-if="cartWarning">
+                    <div class="p-3 bg-amber-100 border-2 border-amber-900 rounded font-bold text-xs text-amber-950 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span>⚠️</span>
+                            <span x-text="cartWarning"></span>
+                        </div>
+                        <button @click="cartWarning = ''" class="font-black text-sm hover:opacity-75 cursor-pointer">✕</button>
+                    </div>
+                </template>
+
+                <!-- Si précommandes fermées -->
+                <template x-if="!preorderStatus.ouvert">
+                    <div class="p-4 bg-slate-200 border-2 border-slate-900 rounded text-center space-y-1">
+                        <p class="font-black text-xs sm:text-sm uppercase text-slate-800">🔒 Précommandes Fermées</p>
+                        <p class="text-xs text-slate-600 font-semibold"
+                           x-text="preorderStatus.message || 'Les précommandes sont actuellement fermées.'"></p>
+                    </div>
+                </template>
+
+                <!-- État Panier Vide -->
+                <template x-if="cart.length === 0">
+                    <div class="py-10 text-center space-y-3 bg-white card-border">
+                        <div class="text-4xl">🛒</div>
+                        <p class="font-black text-sm uppercase text-slate-800">Votre panier est vide</p>
+                        <p class="text-xs text-slate-600 font-semibold max-w-xs mx-auto">
+                            Ajoutez un ou plusieurs articles depuis le catalogue pour les regrouper dans votre précommande.
+                        </p>
+                        <button @click="closeCartModal()"
+                            class="px-5 py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-slate-800 transition-colors cursor-pointer">
+                            Découvrir le catalogue
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Liste des articles -->
+                <template x-if="cart.length > 0">
+                    <div class="space-y-3">
+                        <div class="space-y-2.5 max-h-[42vh] overflow-y-auto pr-1">
+                            <template x-for="item in detailedCartItems" :key="item.index">
+                                <div class="p-3 bg-white card-border flex items-center justify-between gap-3">
+                                    <!-- Image + Nom + Prix unitaire -->
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="w-12 h-12 bg-card-bg card-border p-1 flex items-center justify-center shrink-0">
+                                            <img :src="item.image" :alt="item.name"
+                                                class="max-h-full max-w-full object-contain rounded"
+                                                onerror="this.src='https://placehold.co/100x100/f6f3eb/111827?text=ACEL'">
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h4 class="font-black text-xs sm:text-sm uppercase text-slate-900 truncate"
+                                                x-text="item.name"></h4>
+                                            <p class="text-[11px] font-bold text-slate-600"
+                                               x-text="'$' + item.unitPrice + ' / u.'"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Contrôles : Taille, Quantité, Prix ligne, Suppression -->
+                                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                                        <!-- Taille -->
+                                        <div class="w-20 sm:w-24">
+                                            <select :value="item.taille"
+                                                @change="updateCartSize(item.index, $event.target.value)"
+                                                class="w-full px-1.5 py-1 text-[11px] font-black uppercase bg-white pill-border focus:outline-none cursor-pointer">
+                                                <template x-for="sz in item.availableSizes" :key="sz">
+                                                    <option :value="sz" x-text="sz"></option>
+                                                </template>
+                                            </select>
+                                        </div>
+
+                                        <!-- Quantité Stepper -->
+                                        <div class="flex items-center border-2 border-slate-900 rounded bg-white">
+                                            <button type="button" @click="updateCartQty(item.index, item.quantite - 1)"
+                                                class="px-2 py-0.5 font-black text-xs hover:bg-slate-100 transition-colors cursor-pointer">-</button>
+                                            <span class="px-2 py-0.5 font-black text-xs min-w-[20px] text-center"
+                                                x-text="item.quantite"></span>
+                                            <button type="button" @click="updateCartQty(item.index, item.quantite + 1)"
+                                                :disabled="item.quantite >= 10"
+                                                class="px-2 py-0.5 font-black text-xs hover:bg-slate-100 disabled:opacity-40 transition-colors cursor-pointer">+</button>
+                                        </div>
+
+                                        <!-- Total Ligne -->
+                                        <div class="min-w-[54px] text-right">
+                                            <span class="font-black text-xs sm:text-sm text-slate-900"
+                                                x-text="'$' + item.linePrice"></span>
+                                        </div>
+
+                                        <!-- Supprimer Ligne -->
+                                        <button type="button" @click="removeFromCart(item.index)"
+                                            class="w-7 h-7 flex items-center justify-center text-slate-600 hover:text-red-600 hover:bg-red-50 rounded border border-slate-300 transition-colors cursor-pointer"
+                                            title="Supprimer cet article">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Bloc Récap Prix Total -->
+                        <div class="p-3.5 bg-white card-border flex items-center justify-between">
+                            <div>
+                                <span class="font-black text-xs uppercase text-slate-800">Estimation du total :</span>
+                                <p class="text-[10px] font-bold text-slate-500 uppercase">Sans paiement immédiat en ligne</p>
+                            </div>
+                            <span class="font-black text-xl text-slate-900"
+                                x-text="'$' + cartTotal"></span>
+                        </div>
+
+                        <!-- Bouton Continuer Étape 1 -> Étape 2 -->
+                        <template x-if="preorderStatus.ouvert">
+                            <button @click="goToCartStep(2)"
+                                class="w-full py-3.5 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                                <span>CONTINUER VERS MES INFORMATIONS</span>
+                                <span>→</span>
+                            </button>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ── ÉTAPE 2 : INFORMATIONS PERSONNELLES & VALIDATION ───────────── -->
+            <div x-show="cartStep === 2" x-transition:enter="transition ease-out duration-150"
+                 class="space-y-4">
+
+                <!-- Header étape 2 avec bouton retour et rappel du total -->
+                <div class="flex items-center justify-between pb-2 border-b border-slate-300">
+                    <button type="button" @click="goToCartStep(1)"
+                        class="text-xs font-black uppercase text-slate-900 hover:text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <span>←</span> RETOUR AU PANIER
+                    </button>
+                    <div class="text-right">
+                        <span class="font-black text-xs uppercase text-slate-900"
+                              x-text="cartCount + ' article(s) • Total : $' + cartTotal"></span>
+                    </div>
+                </div>
+
+                <!-- Error Message Banner -->
+                <template x-if="cartError">
+                    <div class="p-3 bg-red-100 border-2 border-red-900 rounded font-bold text-red-950 text-xs flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span x-text="cartError"></span>
+                    </div>
+                </template>
+
+                <!-- Formulaire Informations Client -->
+                <form @submit.prevent="submitCartPrecommande()" class="space-y-3.5">
+                    <!-- Nom & Prénom -->
+                    <div class="space-y-1">
+                        <label class="block text-[11px] font-black uppercase text-slate-700">
+                            Nom & Prénom <span class="text-red-600">*</span>
+                        </label>
+                        <input type="text" x-model="customerInfo.nom" required placeholder="ex: Alex Dupont"
+                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+
+                    <!-- Email -->
+                    <div class="space-y-1">
+                        <label class="block text-[11px] font-black uppercase text-slate-700">
+                            Adresse Email <span class="text-red-600">*</span>
+                        </label>
+                        <input type="email" x-model="customerInfo.email" required placeholder="ex: alex@email.com"
+                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+
+                    <!-- Téléphone -->
+                    <div class="space-y-1">
+                        <label class="block text-[11px] font-black uppercase text-slate-700">
+                            Numéro de Téléphone <span class="text-red-600">*</span>
+                        </label>
+                        <input type="tel" x-model="customerInfo.telephone" required placeholder="ex: 06 12 34 56 78"
+                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+
+                    <!-- Case à cocher : Se souvenir de mes infos sur cet appareil (DÉCOCHÉE PAR DÉFAUT) -->
+                    <div class="flex items-start gap-2.5 pt-1">
+                        <input type="checkbox" id="rememberInfo" x-model="rememberInfo"
+                            class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
+                        <label for="rememberInfo" class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
+                            Se souvenir de mes infos sur cet appareil
+                            <span class="block text-[10px] font-normal text-slate-500">
+                                Conserve votre nom, email et téléphone sur ce navigateur pour vos prochaines commandes.
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Case RGPD (Obligatoire) : Jamais stockée dans localStorage -->
+                    <div class="flex items-start gap-2.5 pt-1">
+                        <input type="checkbox" id="rgpdConsentCart" x-model="rgpdConsent" required
+                            class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
+                        <label for="rgpdConsentCart" class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
+                            J'accepte que mon adresse email et mon numéro de téléphone soient utilisés par le club ACELSPACE pour me recontacter au sujet de cette précommande.
+                            <button type="button" @click="isPrivacyModalOpen = true"
+                                class="underline font-black text-slate-900 hover:text-slate-700 cursor-pointer">
+                                Politique de confidentialité
+                            </button>.
+                        </label>
+                    </div>
+
+                    <!-- Boutons Actions -->
+                    <div class="pt-2 flex items-center gap-3">
+                        <button type="button" @click="goToCartStep(1)"
+                            class="px-4 py-3 bg-white pill-border font-bold text-xs uppercase hover:bg-slate-900 hover:text-white transition-colors cursor-pointer">
+                            RETOUR
+                        </button>
+                        <button type="submit" :disabled="cartSubmitting || !preorderStatus.ouvert"
+                            class="flex-1 py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                            <template x-if="cartSubmitting">
+                                <span class="inline-block animate-spin">⏳</span>
+                            </template>
+                            <span x-text="cartSubmitting ? 'VALIDATION EN COURS...' : 'CONFIRMER LA PRÉCOMMANDE'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ── ÉTAPE 3 : CONFIRMATION COMMANDE ENREGISTRÉE ─────────────────── -->
+            <div x-show="cartStep === 3" x-transition:enter="transition ease-out duration-200"
+                 class="space-y-5 text-center py-4">
+
+                <div class="w-16 h-16 bg-slate-900 text-white rounded-full flex items-center justify-center mx-auto text-3xl font-black shadow-md">
+                    ✓
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-xl font-black uppercase text-slate-900">Précommande Enregistrée !</h3>
+                    <p class="text-xs sm:text-sm text-slate-700 font-semibold max-w-sm mx-auto">
+                        Votre précommande a été enregistrée avec succès. Le club ACELSPACE vous recontactera dès que vos articles seront prêts.
+                    </p>
+                </div>
+
+                <div class="p-3.5 bg-white card-border text-xs font-bold text-slate-800">
+                    Précommande sans paiement en ligne, le règlement s'effectuera auprès du club lors de la remise des articles.
+                </div>
+
+                <button @click="closeCartModal()"
+                    class="w-full py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 transition-colors cursor-pointer">
+                    FERMER
+                </button>
+            </div>
         </div>
     </div>
 
@@ -508,14 +763,14 @@
             <div class="space-y-3 text-xs text-slate-800 font-medium leading-relaxed">
                 <div class="p-3 bg-white pill-border space-y-1">
                     <h3 class="font-black uppercase text-slate-900 text-[11px]">1. Données collectées</h3>
-                    <p class="text-slate-700">Nom & Prénom, moyen de contact (adresse email ou identifiant Instagram),
+                    <p class="text-slate-700">Nom & Prénom, adresse email, numéro de téléphone,
                         choix de taille et quantité d'articles précommandés.</p>
                 </div>
 
                 <div class="p-3 bg-white pill-border space-y-1">
                     <h3 class="font-black uppercase text-slate-900 text-[11px]">2. Finalité du traitement</h3>
                     <p class="text-slate-700">Ces données sont strictement destinées au traitement logistique des
-                        précommandes et à la prise de contact par les membres du bureau du club ACELSPACE. Aucun usage
+                        précommandes et à la prise de contact par les membres du bureau du club ACELSPACE pour le suivi de votre commande. Aucun usage
                         commercial tiers ni revente.</p>
                 </div>
 
