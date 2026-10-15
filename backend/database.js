@@ -9,11 +9,13 @@ const __dirname = path.dirname(__filename);
 // Database path outside public folder
 const dbDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+    fs.mkdirSync(dbDir, { recursive: true, mode: 0o700 });
 }
+fs.chmodSync(dbDir, 0o700);
 
 const dbPath = path.join(dbDir, 'precommandes.sqlite');
 const db = new Database(dbPath);
+fs.chmodSync(dbPath, 0o600);
 
 // Enable WAL mode for performance & durability
 db.pragma('journal_mode = WAL');
@@ -94,10 +96,14 @@ db.exec(`
         quantite INTEGER NOT NULL CHECK (quantite >= 1 AND quantite <= 10),
         prix_estime REAL NOT NULL CHECK (prix_estime >= 0),
         statut TEXT NOT NULL DEFAULT 'en_attente' CHECK (statut IN ('en_attente', 'confirmee', 'livree', 'annulee')),
+        status TEXT NOT NULL DEFAULT 'EN_ATTENTE_PAIEMENT',
         consentement INTEGER NOT NULL DEFAULT 1 CHECK (consentement IN (0, 1)),
         date_consentement TEXT,
         date_creation TEXT NOT NULL,
-        product_id INTEGER
+        product_id INTEGER,
+        personnalisation TEXT,
+        no_customization INTEGER NOT NULL DEFAULT 0,
+        notify_price_drops INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS idx_precommandes_statut ON precommandes (statut);
@@ -144,6 +150,27 @@ if (!precommandeCols.includes('telephone')) {
 if (!precommandeCols.includes('commande_ref')) {
     db.exec(`ALTER TABLE precommandes ADD COLUMN commande_ref TEXT;`);
 }
+if (!precommandeCols.includes('remarques')) {
+    db.exec(`ALTER TABLE precommandes ADD COLUMN remarques TEXT;`);
+}
+if (!precommandeCols.includes('personnalisation')) {
+    db.exec(`ALTER TABLE precommandes ADD COLUMN personnalisation TEXT;`);
+}
+if (!precommandeCols.includes('notify_price_drops')) {
+    db.exec(`ALTER TABLE precommandes ADD COLUMN notify_price_drops INTEGER NOT NULL DEFAULT 0;`);
+}
+if (!precommandeCols.includes('no_customization')) {
+    db.exec(`ALTER TABLE precommandes ADD COLUMN no_customization INTEGER NOT NULL DEFAULT 0;`);
+}
+if (!precommandeCols.includes('status')) {
+    db.exec(`ALTER TABLE precommandes ADD COLUMN status TEXT NOT NULL DEFAULT 'EN_ATTENTE_PAIEMENT';`);
+}
+db.prepare(`
+    UPDATE precommandes
+    SET status = 'EN_ATTENTE_PAIEMENT'
+    WHERE status IS NULL
+       OR status NOT IN ('EN_ATTENTE_PAIEMENT', 'PAYE', 'EN_COMMANDE', 'PRET_AU_LOCAL', 'REMIS')
+`).run();
 // Migration : chaque ancienne ligne reçoit sa propre ref
 db.exec(`UPDATE precommandes SET commande_ref = 'CMD-' || printf('%04d', id) WHERE commande_ref IS NULL;`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_precommandes_client_id ON precommandes (client_id);`);
@@ -213,9 +240,46 @@ db.exec(`
         featured INTEGER NOT NULL DEFAULT 0,
         actif INTEGER NOT NULL DEFAULT 1,
         ordre INTEGER NOT NULL DEFAULT 0,
-        date_creation TEXT NOT NULL
+        date_creation TEXT NOT NULL,
+        requires_customization INTEGER NOT NULL DEFAULT 0,
+        customization_fields TEXT NOT NULL DEFAULT '',
+        image_url_2 TEXT,
+        allow_no_customization INTEGER NOT NULL DEFAULT 1
     );
 `);
+
+const productCols = db.pragma('table_info(products)').map(c => c.name);
+if (!productCols.includes('requires_customization')) {
+    db.exec(`ALTER TABLE products ADD COLUMN requires_customization INTEGER NOT NULL DEFAULT 0;`);
+}
+if (!productCols.includes('customization_fields')) {
+    db.exec(`ALTER TABLE products ADD COLUMN customization_fields TEXT NOT NULL DEFAULT '';`);
+}
+if (!productCols.includes('image_url_2')) {
+    db.exec(`ALTER TABLE products ADD COLUMN image_url_2 TEXT;`);
+}
+if (!productCols.includes('allow_no_customization')) {
+    db.exec(`ALTER TABLE products ADD COLUMN allow_no_customization INTEGER NOT NULL DEFAULT 1;`);
+}
+const productsWithLegacyCustomizationSize = db.prepare(`
+    SELECT id, sizes FROM products WHERE sizes LIKE '%SANS PERSONNALISATION%'
+`).all();
+if (productsWithLegacyCustomizationSize.length > 0) {
+    const updateSizes = db.prepare('UPDATE products SET sizes = ? WHERE id = ?');
+    db.transaction(() => {
+        for (const product of productsWithLegacyCustomizationSize) {
+            const sizes = JSON.parse(product.sizes || '[]')
+                .filter(size => size !== 'SANS PERSONNALISATION');
+            updateSizes.run(JSON.stringify(sizes.length > 0 ? sizes : ['Taille unique']), product.id);
+        }
+    })();
+}
+db.prepare(`
+    UPDATE products
+    SET customization_fields = 'Informations à personnaliser'
+    WHERE requires_customization = 1
+      AND (customization_fields IS NULL OR trim(customization_fields) = '')
+`).run();
 
 // Seed products if table empty
 const productCount = db.prepare(`SELECT COUNT(*) as c FROM products`).get();
@@ -229,13 +293,13 @@ if (productCount.c === 0) {
         insertProduct.run('T-shirt', 30, 'T-shirt aux couleurs du club, avec votre nom et prenom.',
             JSON.stringify(['M', 'L', 'XL', 'XXL']),
             '/images/products/acelspace-shirt.jpg', 1, 1, now);
-        insertProduct.run('Stylo', 10, 'Stylo officiel aux couleurs du club ACELSPACE.',
+        insertProduct.run('Stylo', 10, 'Stylo officiel aux couleurs du club AcelSpace.',
             JSON.stringify(['S', 'M', 'L', 'XL']),
             '/images/products/acelspace-pen.jpg', 0, 2, now);
-        insertProduct.run('Tapis de souris', 18, 'Tapis de souris avec le logo officiel du club ACELSPACE.',
+        insertProduct.run('Tapis de souris', 18, 'Tapis de souris avec le logo officiel du club AcelSpace.',
             JSON.stringify(['Taille unique']),
             '/images/products/acelspace-mousepad.jpg', 0, 3, now);
-        insertProduct.run('Cle usb', 15, 'Cle USB 32 Go aux couleurs officielles du club ACELSPACE.',
+        insertProduct.run('Cle usb', 15, 'Cle USB 32 Go aux couleurs officielles du club AcelSpace.',
             JSON.stringify(['32 GO']),
             '/images/products/acelspace-usb.jpg', 0, 4, now);
     })();
@@ -244,5 +308,128 @@ if (productCount.c === 0) {
 // ─── Règle Vedette : Seul un produit actif peut être vedette ──────────────────
 // Nettoie l'anomalie où un produit archivé est marqué vedette
 db.exec(`UPDATE products SET featured = 0 WHERE actif = 0;`);
+
+// ─── Prix Dégressifs ──────────────────────────────────────────────────────────
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS price_tiers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL REFERENCES products(id),
+        qty_min INTEGER NOT NULL,
+        qty_max INTEGER,        -- NULL = dernier palier (illimité)
+        unit_price REAL NOT NULL,
+        created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS price_tier_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL REFERENCES products(id),
+        uploaded_at TEXT NOT NULL,
+        tiers_json TEXT NOT NULL -- snapshot JSON complet de la grille
+    );
+
+    CREATE TABLE IF NOT EXISTS tier_notifications_sent (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        tier_id INTEGER NOT NULL,   -- id du palier actif au moment de l'envoi
+        sent_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_price_tiers_product ON price_tiers (product_id);
+    CREATE INDEX IF NOT EXISTS idx_tier_notif_product ON tier_notifications_sent (product_id, tier_id);
+`);
+
+// ─── Fonction : Prix courant pour un produit ──────────────────────────────────
+/**
+ * Calcule le prix unitaire courant d'un produit selon la quantité totale
+ * des précommandes non-annulées.
+ *
+ * @param {number} product_id
+ * @returns {{ unit_price: number, tier_id: number, qty_total: number } | null}
+ *   null si aucune grille n'est définie pour ce produit.
+ */
+export function getCurrentPrice(product_id) {
+    // Vérifie qu'une grille existe
+    const tierCount = db.prepare(`
+        SELECT COUNT(*) as c FROM price_tiers WHERE product_id = ?
+    `).get(product_id);
+
+    if (!tierCount || tierCount.c === 0) return null;
+
+    // Somme des quantités commandées (précommandes non-annulées)
+    const row = db.prepare(`
+        SELECT COALESCE(SUM(quantite), 0) as total
+        FROM precommandes
+        WHERE product_id = ? AND statut != 'annulee'
+    `).get(product_id);
+
+    const qty_total = row ? row.total : 0;
+
+    // Palier actif : qty_min <= total < qty_max, ou dernier palier (qty_max IS NULL)
+    const tier = db.prepare(`
+        SELECT id, unit_price
+        FROM price_tiers
+        WHERE product_id = ?
+          AND qty_min <= ?
+          AND (qty_max IS NULL OR qty_max > ?)
+        ORDER BY qty_min DESC
+        LIMIT 1
+    `).get(product_id, qty_total, qty_total);
+
+    if (!tier) {
+        // qty_total inférieur au premier palier : prendre le premier palier quand même
+        const firstTier = db.prepare(`
+            SELECT id, unit_price
+            FROM price_tiers
+            WHERE product_id = ?
+            ORDER BY qty_min ASC
+            LIMIT 1
+        `).get(product_id);
+
+        if (!firstTier) return null;
+        return { unit_price: firstTier.unit_price, tier_id: firstTier.id, qty_total };
+    }
+
+    return { unit_price: tier.unit_price, tier_id: tier.id, qty_total };
+}
+
+// ─── Fonction : Emails clients ayant précommandé un produit ───────────────────
+/**
+ * Retourne les emails distincts des clients ayant demandé les notifications
+ * de baisse de prix pour une précommande non-annulée de ce produit.
+ *
+ * @param {number} product_id
+ * @returns {string[]}
+ */
+export function getClientsForProduct(product_id) {
+    const rows = db.prepare(`
+        SELECT DISTINCT email
+        FROM precommandes
+        WHERE product_id = ?
+          AND statut != 'annulee'
+          AND notify_price_drops = 1
+          AND email IS NOT NULL
+          AND email != ''
+    `).all(product_id);
+
+    return rows.map(r => r.email);
+}
+
+export function purgeExpiredPersonalData() {
+    return db.transaction(() => {
+        const orders = db.prepare(`
+            DELETE FROM precommandes
+            WHERE datetime(date_creation) < datetime('now', '-3 years')
+        `).run();
+        const clients = db.prepare(`
+            DELETE FROM clients
+            WHERE datetime(date_creation) < datetime('now', '-3 years')
+              AND NOT EXISTS (
+                  SELECT 1 FROM precommandes WHERE precommandes.client_id = clients.id
+              )
+        `).run();
+        return { ordersDeleted: orders.changes, clientsDeleted: clients.changes };
+    })();
+}
 
 export default db;
