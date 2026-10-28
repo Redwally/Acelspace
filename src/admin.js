@@ -27,6 +27,14 @@ Alpine.data('adminApp', () => ({
     statusToggleError: '',
 
     filterStatut: 'all',
+    orderStatuses: [
+        { value: 'EN_ATTENTE_PAIEMENT', label: 'En attente de paiement' },
+        { value: 'PAYE', label: 'Payé' },
+        { value: 'EN_COMMANDE', label: 'En commande fournisseur' },
+        { value: 'PRET_AU_LOCAL', label: 'Prêt au local' },
+        { value: 'REMIS', label: 'Remis au client' },
+        { value: 'ANNULE', label: 'Annulé' }
+    ],
     filterProduit: 'all',
     searchQuery: '',
     loading: false,
@@ -43,6 +51,7 @@ Alpine.data('adminApp', () => ({
     // ─── Catalogue Produits State ─────────────────────────────────────────────
     products: [],
     productsLoading: false,
+    logoUploading: false,
     productModalOpen: false,
     productSaving: false,
     productFormError: '',
@@ -54,10 +63,17 @@ Alpine.data('adminApp', () => ({
         description: '',
         sizes: ['Taille unique'],
         featured: false,
+        requires_customization: false,
+        customization_fields: '',
+        allow_no_customization: true,
         actif: 1,
         imageFile: null,
         imagePreview: null,
-        currentImage: null
+        currentImage: null,
+        image_url_2: '',
+        imageUrl2FileName: '',
+        detail_table_image: '',
+        detailTableImageFileName: ''
     },
 
     // Delete Product Modal
@@ -67,6 +83,16 @@ Alpine.data('adminApp', () => ({
     deleteProductError: '',
     deleteProductHasOrders: false,
     deleteProductOrderCount: 0,
+
+    // ─── Prix Dégressifs / Grilles Tarifaires State ───────────────────────────
+    priceTiersModalOpen: false,
+    priceTiersProduct: null,
+    priceTiers: [],
+    priceTiersCurrentPrice: null,
+    priceTiersHistory: [],
+    priceTiersLoading: false,
+    priceTiersUploading: false,
+    priceTiersError: '',
 
     toast: {
         show: false,
@@ -80,8 +106,47 @@ Alpine.data('adminApp', () => ({
         return `C-${String(id).padStart(3, '0')}`;
     },
 
+    formatPrice(price) {
+        if (price === null || price === undefined) return 'Prix non disponible';
+        return `${Number(price).toFixed(2).replace('.', ',')} €`;
+    },
+
+    hasPersonalization(value) {
+        if (typeof value !== 'string') return false;
+        const normalized = value.trim().toLowerCase();
+        return normalized !== '' && normalized !== 'null' && normalized !== 'undefined';
+    },
+
     async init() {
-        await this.checkAuth();
+        await Promise.all([this.checkAuth(), this.loadSiteLogo()]);
+    },
+
+    async loadSiteLogo() {
+        try {
+            const response = await fetch('/api/logo', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (!data.success || typeof data.url !== 'string') {
+                throw new Error('Réponse logo invalide.');
+            }
+
+            const logoUrl = new URL(data.url, window.location.origin);
+            logoUrl.searchParams.set('t', Date.now().toString());
+            const absoluteLogoUrl = logoUrl.href;
+            const favicon = document.getElementById('dynamic-favicon');
+            if (favicon) {
+                favicon.href = absoluteLogoUrl;
+                const extension = logoUrl.pathname.split('.').pop()?.toLowerCase();
+                const mimeTypes = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', svg: 'image/svg+xml' };
+                if (extension && mimeTypes[extension]) favicon.type = mimeTypes[extension];
+            }
+            const appleIcon = document.getElementById('dynamic-apple-icon');
+            if (appleIcon) appleIcon.href = absoluteLogoUrl;
+            const ogImage = document.getElementById('og-image');
+            if (ogImage) ogImage.content = absoluteLogoUrl;
+        } catch (error) {
+            console.error('Erreur récupération du logo du site :', error);
+        }
     },
 
     showToast(message, type = 'success') {
@@ -183,7 +248,7 @@ Alpine.data('adminApp', () => ({
         this.loading = true;
         try {
             const params = new URLSearchParams();
-            if (this.filterStatut !== 'all') params.append('statut', this.filterStatut);
+            if (this.filterStatut !== 'all') params.append('status', this.filterStatut);
             if (this.filterProduit !== 'all') params.append('produit', this.filterProduit);
             if (this.searchQuery.trim()) params.append('search', this.searchQuery.trim());
 
@@ -229,7 +294,7 @@ Alpine.data('adminApp', () => ({
                     lines: [],
                     totalPrice: 0,
                     totalQty: 0,
-                    commonStatut: order.statut
+                    commonOrderStatus: order.status
                 };
                 map.set(ref, group);
                 groups.push(group);
@@ -238,75 +303,68 @@ Alpine.data('adminApp', () => ({
             g.lines.push(order);
             g.totalPrice = Math.round((g.totalPrice + (Number(order.prix_estime) || 0)) * 100) / 100;
             g.totalQty += (Number(order.quantite) || 0);
-            if (g.commonStatut !== order.statut) {
-                g.commonStatut = 'mixed';
+            if (g.commonOrderStatus !== order.status) {
+                g.commonOrderStatus = 'mixed';
             }
         }
         return groups;
     },
 
-    async updateStatut(order, newStatut) {
-        const previousStatut = order.statut;
-        order.statut = newStatut;
+    async updateOrderStatus(order, newStatus) {
+        const previousStatus = order.status;
+        order.status = newStatus;
 
         try {
-            const res = await fetch(`/api/admin/precommandes/${order.id}`, {
+            const res = await fetch(`/api/admin/precommandes/${order.id}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statut: newStatut })
+                body: JSON.stringify({ status: newStatus })
             });
 
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-                order.statut = previousStatut;
+                order.status = previousStatus;
                 this.showToast(`[${res.status}] ${data.message || 'Échec de mise à jour du statut.'}`, 'error');
             } else {
-                this.showToast(`Statut de l'article #${order.id} mis à jour : ${newStatut}`);
-            }
-        } catch (err) {
-            console.error('Erreur update statut :', err);
-            order.statut = previousStatut;
-            this.showToast(`Erreur réseau : ${err.message}`, 'error');
-        } finally {
-            await this.fetchPrecommandes();
-        }
-    },
-
-    async updateGroupStatut(group, event) {
-        const newStatut = event.target.value;
-        if (!newStatut) return;
-
-        const statutLabels = {
-            en_attente: 'EN ATTENTE',
-            confirmee: 'CONFIRMÉE',
-            livree: 'LIVRÉE',
-            annulee: 'ANNULÉE'
-        };
-        const label = statutLabels[newStatut] || newStatut.toUpperCase();
-        const count = group.lines ? group.lines.length : 1;
-
-        const ok = window.confirm(`Passer les ${count} lignes en ${label} ?`);
-        event.target.value = '';
-
-        if (!ok) return;
-
-        try {
-            const res = await fetch(`/api/admin/precommandes/ref/${encodeURIComponent(group.commande_ref)}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statut: newStatut })
-            });
-
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                this.showToast(`[${res.status}] ${data.message || 'Échec de mise à jour groupée.'}`, 'error');
-            } else {
-                this.showToast(`Statut mis à jour pour ${count} ligne(s) : ${label}`);
+                this.showToast(`Statut de l'article mis à jour : ${data.status_label}`);
                 await this.fetchPrecommandes();
             }
         } catch (err) {
-            console.error('Erreur update group statut :', err);
+            console.error('Erreur update statut :', err);
+            order.status = previousStatus;
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
+        }
+    },
+
+    async updateAllOrderStatuses(order, event) {
+        const newStatus = event.target.value;
+        if (!newStatus) return;
+
+        const relatedLines = this.precommandes.filter(line => order.commande_ref
+            ? line.commande_ref === order.commande_ref
+            : line.id === order.id);
+        const previousStatuses = relatedLines.map(line => line.status);
+        relatedLines.forEach(line => { line.status = newStatus; });
+
+        try {
+            const res = await fetch(`/api/admin/precommandes/${order.id}/status-all`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                relatedLines.forEach((line, index) => { line.status = previousStatuses[index]; });
+                this.showToast(`[${res.status}] ${data.message || 'Échec de mise à jour groupée.'}`, 'error');
+            } else {
+                this.showToast(`Statut mis à jour pour ${data.updated_lines} article(s) : ${data.status_label}`);
+                await this.fetchPrecommandes();
+            }
+        } catch (err) {
+            console.error('Erreur update statut de toute la commande :', err);
+            relatedLines.forEach((line, index) => { line.status = previousStatuses[index]; });
             this.showToast(`Erreur réseau : ${err.message}`, 'error');
         }
     },
@@ -496,6 +554,31 @@ Alpine.data('adminApp', () => ({
         }
     },
 
+    previewLogo(event) {
+        const input = event.target;
+        const file = input.files?.[0];
+        if (!file) return;
+
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            input.value = '';
+            this.showToast('Format invalide. Choisissez une image JPEG, PNG ou WebP.', 'error');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            input.value = '';
+            this.showToast('Le logo ne doit pas dépasser 2 Mo.', 'error');
+            return;
+        }
+
+        const preview = document.getElementById('logoPreview');
+        if (preview) {
+            if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+            const objectUrl = URL.createObjectURL(file);
+            preview.dataset.objectUrl = objectUrl;
+            preview.src = objectUrl;
+        }
+    },
+
     openProductModal(product = null) {
         this.productFormError = '';
         this.sizeInput = '';
@@ -507,10 +590,17 @@ Alpine.data('adminApp', () => ({
                 description: product.description || '',
                 sizes: Array.isArray(product.sizes) && product.sizes.length > 0 ? [...product.sizes] : ['Taille unique'],
                 featured: product.featured === 1,
+                requires_customization: product.requires_customization === 1,
+                customization_fields: product.customization_fields || '',
+                allow_no_customization: product.allow_no_customization === 1,
                 actif: product.actif,
                 imageFile: null,
                 imagePreview: null,
-                currentImage: product.image || null
+                currentImage: product.image || null,
+                image_url_2: product.image_url_2 || '',
+                imageUrl2FileName: '',
+                detail_table_image: product.detail_table_image || '',
+                detailTableImageFileName: ''
             };
         } else {
             this.productForm = {
@@ -520,13 +610,26 @@ Alpine.data('adminApp', () => ({
                 description: '',
                 sizes: ['Taille unique'],
                 featured: false,
+                requires_customization: false,
+                customization_fields: '',
+                allow_no_customization: true,
                 actif: 1,
                 imageFile: null,
                 imagePreview: null,
-                currentImage: null
+                currentImage: null,
+                image_url_2: '',
+                imageUrl2FileName: '',
+                detail_table_image: '',
+                detailTableImageFileName: ''
             };
         }
         this.productModalOpen = true;
+    },
+
+    onProductCustomizationToggle() {
+        if (!this.productForm.requires_customization) {
+            this.productForm.customization_fields = '';
+        }
     },
 
     closeProductModal() {
@@ -575,6 +678,55 @@ Alpine.data('adminApp', () => ({
         this.productFormError = '';
     },
 
+    async handleImageUpload(event, targetField = 'image') {
+        const input = event.target;
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            this.productFormError = 'Image trop volumineuse (max 2 Mo).';
+            input.value = '';
+            return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            this.productFormError = 'Format image invalide. JPEG, PNG ou WebP uniquement (SVG interdit).';
+            input.value = '';
+            return;
+        }
+        if (!['image', 'image_url_2', 'detail_table_image'].includes(targetField)) {
+            this.productFormError = 'Champ de destination de l’image invalide.';
+            input.value = '';
+            return;
+        }
+        if (targetField === 'image_url_2') {
+            this.productForm.imageUrl2FileName = file.name;
+        } else if (targetField === 'detail_table_image') {
+            this.productForm.detailTableImageFileName = file.name;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+            const response = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (!response.ok || !data.success || typeof data.url !== 'string') {
+                this.productFormError = data.message || 'Erreur lors du téléversement de l’image.';
+                if (targetField === 'image_url_2') this.productForm.imageUrl2FileName = '';
+                if (targetField === 'detail_table_image') this.productForm.detailTableImageFileName = '';
+                return;
+            }
+            this.productForm[targetField] = data.url;
+            this.productFormError = '';
+        } catch (error) {
+            console.error('Erreur téléversement image produit :', error);
+            this.productFormError = `Erreur réseau : ${error.message}`;
+            if (targetField === 'image_url_2') this.productForm.imageUrl2FileName = '';
+            if (targetField === 'detail_table_image') this.productForm.detailTableImageFileName = '';
+        } finally {
+            input.value = '';
+        }
+    },
+
     async saveProduct() {
         this.productFormError = '';
 
@@ -589,12 +741,21 @@ Alpine.data('adminApp', () => ({
 
         const priceNum = parseFloat(this.productForm.price);
         if (isNaN(priceNum) || priceNum <= 0 || priceNum > 100000) {
-            this.productFormError = 'Le prix doit être un nombre strictement supérieur à 0 (max 100 000).';
+            this.productFormError = 'Le prix doit être un nombre strictly supérieur à 0 (max 100 000).';
             return;
         }
 
         if (!this.productForm.sizes || this.productForm.sizes.length === 0) {
             this.productFormError = 'Au moins une taille est requise (ou "Taille unique").';
+            return;
+        }
+        const customizationFields = (this.productForm.customization_fields || '').trim();
+        if (this.productForm.requires_customization && !customizationFields) {
+            this.productFormError = 'Indiquez les informations de personnalisation à demander au client.';
+            return;
+        }
+        if (customizationFields.length > 120) {
+            this.productFormError = 'Le libellé ne doit pas dépasser 120 caractères.';
             return;
         }
 
@@ -607,6 +768,11 @@ Alpine.data('adminApp', () => ({
             formData.append('description', (this.productForm.description || '').trim());
             formData.append('sizes', JSON.stringify(this.productForm.sizes));
             formData.append('featured', this.productForm.featured ? '1' : '0');
+            formData.append('requires_customization', this.productForm.requires_customization ? '1' : '0');
+            formData.append('customization_fields', this.productForm.requires_customization ? customizationFields : '');
+            formData.append('allow_no_customization', this.productForm.allow_no_customization ? '1' : '0');
+            formData.append('image_url_2', (this.productForm.image_url_2 || '').trim());
+            formData.append('detail_table_image', (this.productForm.detail_table_image || '').trim());
             if (this.productForm.imageFile) {
                 formData.append('image', this.productForm.imageFile);
             }
@@ -700,6 +866,51 @@ Alpine.data('adminApp', () => ({
         }
     },
 
+    async uploadLogo() {
+        if (this.logoUploading) return;
+
+        const input = document.getElementById('logoFileInput');
+        const file = input?.files?.[0];
+        if (!file) {
+            this.showToast('Sélectionnez un fichier logo avant de continuer.', 'error');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            this.showToast('Image trop volumineuse (max 2 Mo).', 'error');
+            return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            this.showToast('Format invalide. JPEG, PNG ou WebP uniquement.', 'error');
+            return;
+        }
+
+        this.logoUploading = true;
+        const formData = new FormData();
+        formData.append('logo', file);
+        try {
+            const res = await fetch('/api/admin/logo', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                this.showToast(data.message || 'Erreur upload logo.', 'error');
+            } else {
+                const preview = document.getElementById('logoPreview');
+                if (preview?.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+                if (preview) {
+                    delete preview.dataset.objectUrl;
+                    preview.src = `/api/logo/image?t=${Date.now()}`;
+                }
+                await this.loadSiteLogo();
+                input.value = '';
+                this.showToast('Logo mis à jour !');
+            }
+        } catch (err) {
+            console.error('Erreur upload logo :', err);
+            this.showToast(`Erreur réseau : ${err.message}`, 'error');
+        } finally {
+            this.logoUploading = false;
+        }
+    },
+
     openDeleteProductModal(product) {
         this.productToDelete = product;
         this.deleteProductError = '';
@@ -750,24 +961,95 @@ Alpine.data('adminApp', () => ({
         await this.toggleActif(target);
     },
 
+    // ─── Prix Dégressifs Methods ──────────────────────────────────────────────
+
+    downloadTiersTemplate() {
+        window.location.href = '/api/admin/price-tiers/template';
+    },
+
+    async openPriceTiersModal(product) {
+        if (!product) return;
+        this.priceTiersProduct = product;
+        this.priceTiersError = '';
+        this.priceTiersLoading = true;
+        this.priceTiersModalOpen = true;
+
+        try {
+            const res = await fetch(`/api/admin/price-tiers/${product.id}`);
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                this.priceTiersError = data.message || 'Erreur lors de la récupération de la grille tarifaire.';
+            } else {
+                this.priceTiers = data.tiers || [];
+                this.priceTiersCurrentPrice = data.current_price;
+                this.priceTiersHistory = data.history || [];
+            }
+        } catch (err) {
+            console.error('Erreur openPriceTiersModal :', err);
+            this.priceTiersError = `Erreur réseau : ${err.message}`;
+        } finally {
+            this.priceTiersLoading = false;
+        }
+    },
+
+    closePriceTiersModal() {
+        this.priceTiersModalOpen = false;
+        this.priceTiersProduct = null;
+        this.priceTiers = [];
+        this.priceTiersCurrentPrice = null;
+        this.priceTiersHistory = [];
+        this.priceTiersError = '';
+    },
+
+    async uploadTiersFile(event) {
+        const input = event.target;
+        const file = input.files?.[0];
+        if (!file) return;
+
+        if (!this.priceTiersProduct) return;
+
+        this.priceTiersUploading = true;
+        this.priceTiersError = '';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch(`/api/admin/price-tiers/${this.priceTiersProduct.id}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                this.priceTiersError = data.message || 'Erreur lors de l\'envoi du fichier XLSX.';
+            } else {
+                this.showToast(data.message || 'Grille tarifaire mise à jour !');
+                this.priceTiers = data.tiers || [];
+                this.priceTiersCurrentPrice = data.current_price;
+                await this.openPriceTiersModal(this.priceTiersProduct);
+            }
+        } catch (err) {
+            console.error('Erreur uploadTiersFile :', err);
+            this.priceTiersError = `Erreur réseau : ${err.message}`;
+        } finally {
+            this.priceTiersUploading = false;
+            input.value = '';
+        }
+    },
+
     exportCSV() {
         window.location.href = '/api/admin/export';
     },
 
     exportRecap() {
-        const params = new URLSearchParams();
-        if (this.filterStatut !== 'all') params.append('statut', this.filterStatut);
-        if (this.filterProduit !== 'all') params.append('produit', this.filterProduit);
-        const queryString = params.toString() ? `?${params.toString()}` : '';
-        window.location.href = `/api/admin/export-recap${queryString}`;
+        window.location.href = '/api/admin/export-recap';
     },
 
     exportPDF() {
-        const params = new URLSearchParams();
-        if (this.filterStatut !== 'all') params.append('statut', this.filterStatut);
-        if (this.filterProduit !== 'all') params.append('produit', this.filterProduit);
-        const queryString = params.toString() ? `?${params.toString()}` : '';
-        window.open(`/admin-print.html${queryString}`, '_blank');
+        window.open('/admin-print.html', '_blank');
     },
 
     formatDate(isoString) {
@@ -804,6 +1086,35 @@ Alpine.data('adminApp', () => ({
             'annulee': 'bg-red-100 text-red-900 border-red-900'
         };
         return map[statut] || 'bg-slate-100 text-slate-900 border-slate-900';
+    },
+
+    getOrderStatusLabel(status) {
+        return this.orderStatuses.find(item => item.value === status)?.label || 'En attente de paiement';
+    },
+
+    getStatusColorClasses(status) {
+        const map = {
+            '': 'bg-white text-slate-800 border-slate-300',
+            EN_ATTENTE_PAIEMENT: 'bg-slate-200 text-slate-800 border-slate-400 font-medium',
+            PAYE: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-medium',
+            EN_COMMANDE: 'bg-amber-100 text-amber-800 border-amber-400 font-medium',
+            PRET_AU_LOCAL: 'bg-sky-100 text-sky-800 border-sky-400 font-medium',
+            REMIS: 'bg-green-200 text-green-900 border-green-500 font-medium',
+            ANNULE: 'bg-rose-100 text-rose-800 border-rose-400 font-medium'
+        };
+        return map[status] || map[''];
+    },
+
+    getOrderStatusBadgeClass(status) {
+        const map = {
+            EN_ATTENTE_PAIEMENT: 'bg-amber-100 text-amber-900 border-amber-800',
+            PAYE: 'bg-emerald-100 text-emerald-900 border-emerald-800',
+            EN_COMMANDE: 'bg-sky-100 text-sky-900 border-sky-800',
+            PRET_AU_LOCAL: 'bg-indigo-100 text-indigo-900 border-indigo-800',
+            REMIS: 'bg-slate-200 text-slate-900 border-slate-600',
+            ANNULE: 'bg-red-100 text-red-900 border-red-800'
+        };
+        return map[status] || map.EN_ATTENTE_PAIEMENT;
     }
 }));
 

@@ -1,9 +1,9 @@
-# ACELSPACE — Charte Technique & Artistique / Agent.md
+# AcelSpace — Charte Technique & Artistique / Agent.md
 
-Ce fichier documente la direction artistique (DA), les spécifications techniques et les bonnes pratiques du site **ACELSPACE**.
+Ce fichier documente la direction artistique (DA), les spécifications techniques et les bonnes pratiques du site **AcelSpace**.
 Toute modification, nouvelle section ou composant doit respecter ces règles pour garantir la cohérence visuelle et technique. En cas de doute, reproduire l'existant.
 
-Nom de marque : **ACELSPACE** (jamais "ACE SPACE"), dans les textes, titres, métadonnées et commentaires.
+Nom de marque : **AcelSpace** (jamais "ACE SPACE"), dans les textes, titres, métadonnées et commentaires.
 
 ---
 
@@ -110,7 +110,7 @@ Nom de marque : **ACELSPACE** (jamais "ACE SPACE"), dans les textes, titres, mé
 
 ## 8. Données Produits & Modale produit
 
-- Chaque produit possède : `id`, `name`, `price`, `image` (haute résolution sans fond blanc rigide), `description`, `sizes`.
+- Chaque produit possède : `id`, `name`, `price`, `image` (haute résolution sans fond blanc rigide), `description`, `sizes`. Le champ facultatif `detail_table_image` contient l’image du guide des tailles / formats affichée dans la fiche produit.
 - Pour les accessoires / objets sans taille vestimentaire (ex : clé USB, bonnet), toujours utiliser `sizes: ['Taille unique']` plutôt que des valeurs vides ou `"none"`.
 - Site vitrine : pas de panier ni de paiement en ligne. Le bouton PRÉCOMMANDER ouvre le formulaire dans la modale produit.
 
@@ -191,7 +191,7 @@ Le dépôt est public : rien de sensible ne doit y figurer.
 
 ## 14. Checklist avant d'ajouter ou modifier un élément
 
-- [ ] Nom écrit "ACELSPACE"
+- [ ] Nom écrit "AcelSpace"
 - [ ] Fond `#f6f3eb` (`bg-card-bg`) pour les blocs de contenu, aucun bleu vif ni couleur hors palette
 - [ ] Bordure nette `2px` ou `2.5px solid #111827` (`.pill-border` ou `.card-border`)
 - [ ] Typographie Inter, majuscules pour les titres et labels

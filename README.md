@@ -1,6 +1,6 @@
-# ACELSPACE
+# AcelSpace
 
-Site web et système de précommandes du club ACELSPACE.
+Site web et système de précommandes du club AcelSpace.
 
 ---
 
@@ -28,7 +28,9 @@ Site web et système de précommandes du club ACELSPACE.
    - `PORT=3000` : Port du serveur API backend.
    - `COOKIE_SECRET` : Clé secrète pour les cookies de session admin.
    - `ADMIN_PASSWORD_HASH` : Hash bcrypt du mot de passe admin (par défaut : `admin123`).
-   - `ALLOWED_ORIGIN=http://localhost:5173` : Origine autorisée pour le dev.
+   - `PUBLIC_ORIGIN=https://boutique.acelspace.fr` : Origine publique du site.
+   - `ALLOWED_HOST=boutique.acelspace.fr,localhost,127.0.0.1` : Hôtes Vite autorisés pour le développement/prod.
+   - `ALLOWED_ORIGIN=https://boutique.acelspace.fr` : Origine autorisée par le backend CORS.
 
 ---
 

@@ -8,9 +8,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const allowedHost = env.ALLOWED_HOST || process.env.ALLOWED_HOST;
-    const allowedHosts = allowedHost 
-        ? allowedHost.split(',').map(h => h.trim()) 
-        : true; // Fallback to all hosts if not specified
+    const allowedHosts = allowedHost
+        ? allowedHost.split(',').map(h => h.trim()).filter(Boolean)
+        : [];
 
     return {
         plugins: [
@@ -39,9 +39,10 @@ export default defineConfig(({ mode }) => {
                     main: resolve(__dirname, 'index.html'),
                     admin: resolve(__dirname, 'admin.html'),
                     print: resolve(__dirname, 'admin-print.html'),
+                    legal: resolve(__dirname, 'mentions-legales.html'),
+                    privacy: resolve(__dirname, 'politique-confidentialite.html'),
                 }
             }
         }
     };
 });
-
