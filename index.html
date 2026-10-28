@@ -4,9 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACELSPACE - Boutique</title>
-    <meta name="description" content="Boutique vitrine officielle du club ACELSPACE.">
-    <link rel="icon" href="/favicon.ico">
+    <title>Boutique AcelSpace — Précommandes &amp; Merch Officiel</title>
+    <meta name="description" content="Boutique officielle du club AcelSpace. Précommandez vos sweats, t-shirts, clés USB, tapis de souris, stylos et goodies du club.">
+    <meta name="google-site-verification" content="JS1Q3wINUXODAkE5I3LSWq7vf3xSJNnvuW9LfKKR-Fk">
+    <link rel="canonical" href="https://boutique.acelspace.fr/">
+    <meta property="og:title" content="Boutique AcelSpace — Précommandes &amp; Merch">
+    <meta property="og:description" content="Précommandez vos t-shirts, sweats, clés USB et goodies officiels AcelSpace.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://boutique.acelspace.fr/">
+    <link rel="icon" id="dynamic-favicon" type="image/png" href="/favicon.ico">
+    <link rel="apple-touch-icon" id="dynamic-apple-icon" href="/favicon.ico">
+    <meta property="og:image" id="og-image" content="/favicon.ico">
+    <script type="application/ld+json" id="schema-organization">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "AcelSpace",
+      "url": "https://boutique.acelspace.fr",
+      "logo": "https://boutique.acelspace.fr/favicon.ico"
+    }
+    </script>
     <link rel="stylesheet" href="/src/style.css">
     <!-- Critical CSS : Empêche le flash de contenu sans style (FOUC) et le logo géant au chargement -->
     <style>
@@ -46,7 +63,7 @@
 </head>
 
 <body
-    class="bg-blueprint-grid text-slate-900 font-sans min-h-screen p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center antialiased selection:bg-sky-200 overflow-x-hidden"
+    class="bg-blueprint-grid text-slate-900 font-sans min-h-screen p-3 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center antialiased selection:bg-sky-200 overflow-x-hidden"
     x-data="merchApp()">
 
     <main class="w-full max-w-[1680px] my-auto flex flex-col gap-6 sm:gap-8">
@@ -60,27 +77,23 @@
                     <!-- ACELSPACE LOGO SVG -->
                     <div
                         class="logo-container w-16 h-9 sm:w-20 sm:h-11 lg:w-24 lg:h-12 flex items-center justify-center shrink-0">
-                        <img src="/logo.svg" alt="Logo ACELSPACE" class="w-full h-full object-contain">
+                        <img src="/api/logo/image" alt="Logo AcelSpace" class="w-full h-full object-contain">
                     </div>
                     <span
-                        class="font-black text-2xl sm:text-3xl lg:text-4xl tracking-tight text-slate-900">ACELSPACE</span>
+                        class="font-black text-2xl sm:text-3xl lg:text-4xl tracking-tight text-slate-900">AcelSpace</span>
                 </div>
             </div>
 
             <!-- Navigation Box (Right) -->
             <div
-                class="md:col-span-8 bg-card-bg card-border p-3 sm:p-4 lg:p-5 flex items-center justify-between gap-3 overflow-x-auto">
-                <nav
-                    class="flex items-center gap-6 sm:gap-10 lg:gap-12 font-black text-sm sm:text-base lg:text-lg uppercase tracking-wider text-slate-900">
-                    <a href="#" @click.prevent="resetView()" class="hover:text-sky-700 transition-colors">HOME</a>
-                    <a href="#" @click.prevent="resetView()"
-                        class="hover:text-sky-700 transition-colors whitespace-nowrap">SHOP ALL</a>
-                    <button @click="isAboutOpen = true" class="hover:text-sky-700 transition-colors whitespace-nowrap">À
-                        PROPOS</button>
-                    <button @click="isContactOpen = true" class="hover:text-sky-700 transition-colors">CONTACT</button>
+                class="md:col-span-8 bg-card-bg card-border p-3 sm:p-4 lg:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                <nav class="flex flex-wrap items-center gap-1 sm:gap-6 lg:gap-10 font-black text-xs sm:text-sm lg:text-lg uppercase tracking-wider text-slate-900">
+                      <button @click="isAboutOpen = true" class="px-2 hover:text-sky-700 transition-colors whitespace-nowrap">À PROPOS</button>
+                      <button @click="isContactOpen = true" class="px-2 hover:text-sky-700 transition-colors">CONTACT</button>
+                      <button @click="openTrackingModal()" class="px-2 hover:text-sky-700 transition-colors whitespace-nowrap">🔍 SUIVRE MA COMMANDE</button>
                 </nav>
 
-                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div class="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 shrink-0">
                     <!-- Bouton Permanent Ma Précommande ou Bloc Précommandes Fermées -->
                     <template x-if="preorderStatus.ouvert">
                         <button @click="openCartModal()"
@@ -105,7 +118,7 @@
                         <template x-if="searchActive">
                             <input type="text" x-model="searchQuery" placeholder="Chercher..." x-ref="searchInput"
                                 @keyup.escape="searchActive = false; searchQuery = ''"
-                                class="w-32 sm:w-48 px-3 py-1.5 text-xs sm:text-sm border-2 border-slate-900 rounded bg-white focus:outline-none mr-2">
+                                class="w-32 sm:w-48 px-3 py-1.5 text-base sm:text-sm border-2 border-slate-900 rounded bg-white focus:outline-none mr-2">
                         </template>
                         <button @click="toggleSearch()" class="p-1.5 hover:opacity-75 transition-opacity"
                             title="Rechercher">
@@ -128,15 +141,20 @@
                 class="md:col-span-8 bg-card-bg card-border p-6 sm:p-10 lg:p-14 flex flex-col justify-center space-y-4 min-h-[220px]">
                 <h1
                     class="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-slate-900 uppercase leading-none">
-                    ACELSPACE
+                    Boutique AcelSpace
                 </h1>
-                <p class="text-slate-700 font-bold text-sm sm:text-lg lg:text-xl xl:text-2xl max-w-2xl leading-snug">
-                    Tout achat permet de financer le club, son matériel et ses activités.<br>
+                <p class="break-words text-slate-700 font-bold text-sm sm:text-lg lg:text-xl xl:text-2xl max-w-2xl leading-snug">
+                    Découvrez nos goodies aux couleurs du club.<br>
+                    Les prix indiqués baissent selon le nombre de commandes.<br>
+                    Un e-mail vous sera envoyé pour vous notifier à chaque changement de prix.<br>
+                    Vous serez ensuite recontacté par e-mail ou message à la fin des précommandes pour validation.<br>
+                    Un éventuel bénéfice servira à financer les projets.<br>
+                    <strong>Les pré-commandes sont ouvertes jusqu'au 5 décembre 2026 inclus</strong>.<br>
                 </p>
             </div>
 
             <!-- Top Right Product Card (Featured) -->
-            <div class="md:col-span-4 bg-card-bg card-border flex flex-col justify-between overflow-hidden min-h-[220px]">
+            <div class="md:col-span-4 bg-card-bg card-border flex flex-col h-full justify-between overflow-hidden min-h-[220px]">
                 <!-- Loading State -->
                 <div x-show="catalogLoading" class="flex-1 flex flex-col items-center justify-center p-8 space-y-3">
                     <div class="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
@@ -150,47 +168,57 @@
 
                 <!-- Product Content -->
                 <template x-if="!catalogLoading && !catalogError && topProduct">
-                    <div class="flex flex-col justify-between h-full">
+                    <div class="flex flex-col h-full justify-between break-words" x-data="{ currentImageIndex: 0 }">
                         <!-- Image Box -->
-                        <div class="bg-card-bg p-4 h-64 sm:h-72 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
-                            <img :src="topProduct.image" :alt="topProduct.name"
-                                class="max-h-full max-w-full object-contain drop-shadow-md rounded-md"
+                        <div class="flex w-full h-56 sm:h-72 lg:h-auto lg:flex-1 items-center justify-center p-4 min-h-0 relative bg-card-bg overflow-hidden">
+                            <img :src="currentImageIndex === 1 && topProduct.image_url_2 ? topProduct.image_url_2 : topProduct.image" :alt="topProduct.name"
+                                @click.stop="openLightbox(topProduct.image, topProduct.image_url_2, currentImageIndex)"
+                                class="w-full h-full max-h-full max-w-full object-contain cursor-zoom-in hover:scale-105 transition-transform drop-shadow-md rounded-md"
                                 onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                            <button x-show="topProduct.image_url_2" x-cloak type="button"
+                                @click="currentImageIndex = currentImageIndex === 0 ? 1 : 0"
+                                class="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 pill-border text-[10px] font-black uppercase text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
+                                Changer l’image
+                            </button>
                         </div>
                         <!-- Card Info Label -->
-                        <div class="p-3 sm:p-4 lg:p-5 bg-card-bg flex items-center justify-between gap-3 shrink-0">
-                            <div>
-                                <h3 class="font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
-                                    x-text="topProduct.name"></h3>
-                                <p class="font-black text-sm sm:text-base lg:text-lg text-slate-900"
-                                    x-text="'$' + topProduct.price"></p>
-                            </div>
-                            <button @click="openProductModal(topProduct)"
-                                class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
-                                <span
-                                    class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
-                                <!-- Tintin Rocket -->
-                                <div
-                                    class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
-                                    <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
-                                        <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
-                                        <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
-                                        <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
-                                        <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
-                                        <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
-                                        <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
-                                        <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
-                                        <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
-                                        <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
-                                        <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
-                                        <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
-                                        <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827"
-                                            stroke-width="1.2" fill="none" />
-                                    </svg>
+                        <div class="mt-auto border-t-2 border-black p-3 sm:p-4 lg:p-5 pb-5 bg-card-bg flex flex-col gap-2 shrink-0">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="break-words font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
+                                        x-text="topProduct.name"></h3>
+                                    <p class="text-xs font-semibold text-slate-600">
+                                        Prix maximum :
+                                        <span :class="{ 'line-through': Number(topProduct.current_price) < Number(topProduct.max_price) }"
+                                            x-text="formatPrice(topProduct.max_price)"></span>
+                                    </p>
+                                    <p class="font-black text-sm sm:text-base lg:text-lg text-emerald-800">
+                                        Prix actuel :
+                                        <span x-text="formatPrice(topProduct.current_price)"></span>
+                                    </p>
                                 </div>
-                            </button>
+                                <button @click="openProductModal(topProduct)"
+                                    class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
+                                    <span class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
+                                    <div class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
+                                        <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
+                                            <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
+                                            <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
+                                            <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
+                                            <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
+                                            <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
+                                            <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
+                                            <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
+                                            <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
+                                            <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
+                                            <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
+                                            <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
+                                            <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827" stroke-width="1.2" fill="none" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -208,7 +236,7 @@
             <!-- Error State -->
             <div x-show="!catalogLoading && catalogError" class="col-span-full py-12 bg-card-bg card-border text-center space-y-3">
                 <p class="font-black text-lg text-red-600 uppercase">Erreur de catalogue</p>
-                <p class="text-sm text-slate-600 font-semibold" x-text="catalogError"></p>
+                <p class="break-words text-sm text-slate-600 font-semibold" x-text="catalogError"></p>
                 <button @click="loadCatalog()"
                     class="px-5 py-2 bg-slate-900 text-white font-bold text-xs uppercase pill-border hover:bg-sky-800 transition-colors">
                     Réessayer
@@ -227,49 +255,59 @@
             </div>
 
             <template x-for="product in filteredProducts" :key="product.id">
-                <div class="bg-card-bg card-border flex flex-col justify-between overflow-hidden group">
+                <div class="bg-card-bg card-border flex flex-col justify-between overflow-hidden group break-words" x-data="{ currentImageIndex: 0 }">
                     <!-- Image Box -->
                     <div
-                        class="bg-card-bg p-4 h-60 sm:h-64 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
-                        <img :src="product.image" :alt="product.name"
-                            class="max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105 rounded-md"
+                        class="relative bg-card-bg p-4 h-64 sm:h-72 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
+                        <img :src="currentImageIndex === 1 && product.image_url_2 ? product.image_url_2 : product.image" :alt="product.name"
+                            @click.stop="openLightbox(product.image, product.image_url_2, currentImageIndex)"
+                            class="w-full h-full object-contain p-2 drop-shadow-md transition-transform duration-200 group-hover:scale-105 rounded-md cursor-zoom-in"
                             onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                        <button x-show="product.image_url_2" x-cloak type="button"
+                            @click="currentImageIndex = currentImageIndex === 0 ? 1 : 0"
+                            class="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 pill-border text-[10px] font-black uppercase text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
+                            Changer l’image
+                        </button>
                     </div>
 
                     <!-- Card Info Label -->
-                    <div class="p-3 sm:p-4 lg:p-5 bg-card-bg flex items-center justify-between gap-3 shrink-0">
-                        <div>
-                            <h3 class="font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
-                                x-text="product.name"></h3>
-                            <p class="font-black text-sm sm:text-base lg:text-lg text-slate-900"
-                                x-text="'$' + product.price"></p>
-                        </div>
-                        <button @click="openProductModal(product)"
-                            class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
-                            <span
-                                class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
-                            <!-- Tintin Rocket -->
-                            <div
-                                class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
-                                <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
-                                    <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
-                                    <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
-                                    <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
-                                    <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
-                                    <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
-                                    <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
-                                    <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
-                                    <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
-                                    <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
-                                    <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
-                                    <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
-                                    <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827"
-                                        stroke-width="1.2" fill="none" />
-                                </svg>
+                    <div class="p-3 sm:p-4 lg:p-5 pb-5 bg-card-bg flex flex-col gap-2 shrink-0">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 class="break-words font-bold text-sm sm:text-base lg:text-lg uppercase text-slate-900 leading-tight"
+                                    x-text="product.name"></h3>
+                                <p class="text-xs font-semibold text-slate-600">
+                                    Prix maximum :
+                                    <span :class="{ 'line-through': Number(product.current_price) < Number(product.max_price) }"
+                                        x-text="formatPrice(product.max_price)"></span>
+                                </p>
+                                <p class="font-black text-sm sm:text-base lg:text-lg text-emerald-800">
+                                    Prix actuel :
+                                    <span x-text="formatPrice(product.current_price)"></span>
+                                </p>
                             </div>
-                        </button>
+                            <button @click="openProductModal(product)"
+                                class="group/btn relative overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-card-bg pill-border hover:bg-slate-900 hover:text-white font-bold text-xs sm:text-sm uppercase transition-colors shrink-0 flex items-center justify-center">
+                                <span class="relative z-10 transition-opacity duration-200 group-hover/btn:opacity-20">VOIR</span>
+                                <div class="rocket-fly absolute inset-y-0 left-0 flex items-center pointer-events-none -translate-x-full">
+                                    <svg class="w-10 h-5 drop-shadow-sm" viewBox="0 0 32 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M0 8 L4 6 L3 8 L4 10 Z" fill="#ef4444" />
+                                        <path d="M-2 8 L2 7 L1 8 L2 9 Z" fill="#f97316" />
+                                        <path d="M6 3 L2 1 L7 6 L7 10 L2 15 L6 13 Z" fill="#dc2626" />
+                                        <rect x="6" y="3" width="4" height="5" fill="#dc2626" />
+                                        <rect x="10" y="3" width="4" height="5" fill="#ffffff" />
+                                        <rect x="14" y="3" width="4" height="5" fill="#dc2626" />
+                                        <rect x="18" y="3" width="4" height="5" fill="#ffffff" />
+                                        <rect x="6" y="8" width="4" height="5" fill="#ffffff" />
+                                        <rect x="10" y="8" width="4" height="5" fill="#dc2626" />
+                                        <rect x="14" y="8" width="4" height="5" fill="#ffffff" />
+                                        <rect x="18" y="8" width="4" height="5" fill="#dc2626" />
+                                        <path d="M22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" fill="#dc2626" />
+                                        <path d="M6 3 L22 3 C27 3 30 8 30 8 C30 8 27 13 22 13 Z" stroke="#111827" stroke-width="1.2" fill="none" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -278,47 +316,37 @@
         <!-- FOOTER BAR -->
         <footer
             class="pt-1 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm lg:text-base font-bold text-slate-900 shrink-0">
+            <div class="flex md:hidden items-center justify-center gap-3 w-full my-4">
+                <div class="h-10 bg-card-bg pill-border px-3 flex items-center">
+                    <span>© 2026 AcelSpace</span>
+                </div>
+                <a href="https://www.instagram.com/acelspace78/" target="_blank" rel="noopener noreferrer"
+                    class="w-10 h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
+                    title="Instagram">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                    </svg>
+                </a>
+            </div>
+
             <!-- Left copyright pill -->
-            <div class="bg-card-bg pill-border px-4 py-2 flex items-center">
-                <span>© 2026 ACELSPACE</span>
+            <div class="hidden md:flex bg-card-bg pill-border px-4 py-2 items-center">
+                <span>© 2026 AcelSpace</span>
             </div>
 
             <!-- Right links & socials -->
-            <div class="flex items-center gap-3 sm:gap-5 flex-wrap justify-center">
-                <div class="bg-card-bg pill-border px-4 py-2 flex items-center gap-5">
+            <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-5 flex-wrap justify-center w-full sm:w-auto">
+                <div class="bg-card-bg pill-border px-4 py-2 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs sm:text-sm text-center w-full">
                     <button @click="isAboutOpen = true" class="hover:underline">À propos</button>
                     <button @click="isContactOpen = true" class="hover:underline">Contact</button>
+                    <a href="/mentions-legales.html" class="hover:underline">Mentions légales</a>
+                    <a href="/politique-confidentialite.html" class="hover:underline">Confidentialité</a>
+                    <button @click="openCookiePreferences()" class="hover:underline">Gestion des cookies</button>
                 </div>
 
                 <!-- Social Icons -->
-                <div class="flex items-center gap-2">
-                    <!-- Facebook -->
-                    <!-- <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
-                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
-                        title="Facebook">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path
-                                d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
-                    </a> -->
-                    <!-- X / Twitter -->
-                    <!-- <a href="https://x.com" target="_blank" rel="noopener noreferrer"
-                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
-                        title="X">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path
-                                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                        </svg>
-                    </a> -->
-                    <!-- YouTube -->
-                    <!-- <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
-                        class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
-                        title="YouTube">
-                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path
-                                d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                        </svg>
-                    </a> -->
+                <div class="hidden md:flex items-center gap-2">
                     <!-- Instagram -->
                     <a href="https://www.instagram.com/acelspace78/" target="_blank" rel="noopener noreferrer"
                         class="w-9 h-9 sm:w-10 sm:h-10 bg-card-bg pill-border flex items-center justify-center hover:bg-slate-900 hover:text-white transition-colors"
@@ -330,7 +358,10 @@
                     </a>
                 </div>
             </div>
-     <!-- ── FLOATING MOBILE PREORDER BUTTON ─────────────────────────────────── -->
+        </footer>
+    </main>
+
+    <!-- ── FLOATING MOBILE PREORDER BUTTON ─────────────────────────────────── -->
     <div class="fixed bottom-4 right-4 z-40 md:hidden">
         <template x-if="preorderStatus.ouvert">
             <button @click="openCartModal()"
@@ -367,28 +398,53 @@
             <template x-if="activeProduct">
                 <div class="space-y-4">
                     <!-- Image Box -->
-                    <div class="bg-card-bg card-border p-4 h-64 sm:h-72 flex items-center justify-center overflow-hidden">
-                        <img :src="activeProduct.image" :alt="activeProduct.name"
-                            class="max-h-full max-w-full object-contain rounded-md drop-shadow-md"
+                    <div class="relative bg-card-bg card-border p-4 h-64 sm:h-72 flex items-center justify-center overflow-hidden">
+                        <img :src="currentImageIndex === 1 && activeProduct.image_url_2 ? activeProduct.image_url_2 : activeProduct.image" :alt="activeProduct.name"
+                            @click.stop="openLightbox(activeProduct.image, activeProduct.image_url_2, currentImageIndex)"
+                            class="w-full h-full object-contain p-2 rounded-md drop-shadow-md cursor-zoom-in hover:scale-105 transition-transform duration-200"
                             onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                        <button x-show="activeProduct.image_url_2" x-cloak type="button"
+                            @click="currentImageIndex = currentImageIndex === 0 ? 1 : 0"
+                            class="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 pill-border text-[10px] font-black uppercase text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
+                            Changer l’image
+                        </button>
                     </div>
+
+                    <template x-if="activeProduct.detail_table_image">
+                        <button @click="openLightbox(activeProduct.detail_table_image)"
+                                class="inline-flex items-center gap-2 px-3.5 py-2 mt-3 text-xs font-extrabold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-colors">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>Guide des tailles & formats</span>
+                        </button>
+                    </template>
 
                     <!-- Product Info -->
                     <div class="space-y-2">
                         <div class="flex items-center justify-between gap-3">
-                            <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900"
+                            <h2 class="min-w-0 break-words text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900"
                                 x-text="activeProduct.name"></h2>
-                            <span class="text-xl sm:text-2xl font-black text-slate-900"
-                                x-text="'$' + activeProduct.price"></span>
+                            <div class="text-right shrink-0">
+                                <p class="text-xs font-semibold text-slate-600">
+                                    Prix maximum :
+                                    <span :class="{ 'line-through': Number(activeProduct.current_price) < Number(activeProduct.max_price) }"
+                                        x-text="formatPrice(activeProduct.max_price)"></span>
+                                </p>
+                                <p class="text-lg sm:text-xl font-black text-emerald-800">
+                                    Prix actuel :
+                                    <span x-text="formatPrice(activeProduct.current_price)"></span>
+                                </p>
+                            </div>
                         </div>
 
-                        <p class="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed"
+                        <p class="break-words text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed"
                             x-text="activeProduct.description"></p>
                     </div>
 
                     <!-- Options d'ajout : Taille & Quantité -->
                     <div class="p-4 bg-white card-border space-y-3">
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Choix de la taille -->
                             <div class="space-y-1">
                                 <label class="block text-[11px] font-black uppercase text-slate-700">Taille :</label>
@@ -399,6 +455,14 @@
                                     </template>
                                 </select>
                             </div>
+
+                            <template x-if="Number(activeProduct.requires_customization) === 1 && Number(activeProduct.allow_no_customization) === 1">
+                                <label class="sm:col-span-2 flex items-start gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                                    <input type="checkbox" x-model="noCustomization"
+                                        class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
+                                    <span>Ne pas personnaliser cet article (prénom/nom)</span>
+                                </label>
+                            </template>
 
                             <!-- Choix de la quantité -->
                             <div class="space-y-1">
@@ -425,16 +489,18 @@
                         </div>
                     </div>
 
-                    <!-- Action : Ajouter au panier OU Précommandes fermées -->
+                    <!-- Action : Ajouter au panier / Bloqué si prix null OU Précommandes fermées -->
                     <div class="pt-1">
                         <template x-if="preorderStatus.ouvert">
                             <div class="space-y-2">
                                 <button @click="addToCart(activeProduct)"
-                                    class="w-full py-3.5 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md">
-                                    <span>🛒</span>
-                                    <span>AJOUTER À MA PRÉCOMMANDE</span>
+                                    :disabled="activeProduct.price === null"
+                                    :class="activeProduct.price === null ? 'bg-slate-300 text-slate-500 cursor-not-allowed border-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.99] cursor-pointer shadow-md'"
+                                    class="w-full py-3.5 font-black text-xs sm:text-sm uppercase pill-border transition-all flex items-center justify-center gap-2">
+                                    <span x-text="activeProduct.price === null ? '🚫' : '🛒'"></span>
+                                    <span x-text="activeProduct.price === null ? 'PRIX NON DISPONIBLE' : 'AJOUTER À MA PRÉCOMMANDE'"></span>
                                 </button>
-                                <div class="text-center pt-1" x-show="cartCount > 0">
+                                <div class="text-center pt-1" x-show="cartCount > 0 && activeProduct.price !== null">
                                     <button @click="isProductModalOpen = false; openCartModal()"
                                             class="text-xs font-black text-slate-800 underline hover:text-sky-700 uppercase cursor-pointer">
                                         Voir ma précommande (<span x-text="cartCount"></span> article<span x-show="cartCount > 1">s</span>) →
@@ -465,7 +531,7 @@
         x-transition:enter-end="opacity-100">
 
         <div @click.away="closeCartModal()"
-            class="bg-card-bg card-border w-full max-w-xl p-5 sm:p-6 space-y-5 relative shadow-2xl my-8 max-h-[92vh] overflow-y-auto">
+            class="bg-card-bg card-border w-full max-w-[95%] md:max-w-2xl lg:max-w-3xl mx-2 p-4 sm:p-6 space-y-5 relative shadow-2xl my-2 sm:my-8 max-h-[90vh] overflow-y-auto scroll-smooth">
 
             <!-- Bouton Fermer Modale -->
             <button @click="closeCartModal()"
@@ -506,7 +572,7 @@
 
                 <!-- Warning if items were removed or unavailable -->
                 <template x-if="cartWarning">
-                    <div class="p-3 bg-amber-100 border-2 border-amber-900 rounded font-bold text-xs text-amber-950 flex items-center justify-between gap-2">
+                    <div class="break-words p-3 bg-amber-100 border-2 border-amber-900 rounded font-bold text-xs text-amber-950 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span>⚠️</span>
                             <span x-text="cartWarning"></span>
@@ -544,24 +610,26 @@
                     <div class="space-y-3">
                         <div class="space-y-2.5 max-h-[42vh] overflow-y-auto pr-1">
                             <template x-for="item in detailedCartItems" :key="item.index">
-                                <div class="p-3 bg-white card-border flex items-center justify-between gap-3">
+                                <div class="p-3 bg-white card-border flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <!-- Image + Nom + Prix unitaire -->
-                                    <div class="flex items-center gap-3 min-w-0">
+                                    <div class="flex flex-1 items-center gap-3 min-w-0">
                                         <div class="w-12 h-12 bg-card-bg card-border p-1 flex items-center justify-center shrink-0">
                                             <img :src="item.image" :alt="item.name"
-                                                class="max-h-full max-w-full object-contain rounded"
+                                                class="max-h-full max-w-full object-contain rounded shrink-0"
                                                 onerror="this.src='https://placehold.co/100x100/f6f3eb/111827?text=ACEL'">
                                         </div>
-                                        <div class="min-w-0">
-                                            <h4 class="font-black text-xs sm:text-sm uppercase text-slate-900 truncate"
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="break-words font-black text-xs sm:text-sm uppercase text-slate-900"
                                                 x-text="item.name"></h4>
+                                            <p class="break-words text-[10px] font-bold text-slate-600"
+                                                x-text="`${item.taille || 'Taille unique'} • {item.noCustomization ? 'Sans personnalisation' : (item.requiresCustomization ? 'Avec personnalisation' : 'Personnalisation non requise')}`"></p>
                                             <p class="text-[11px] font-bold text-slate-600"
-                                               x-text="'$' + item.unitPrice + ' / u.'"></p>
+                                               x-text="item.unitPrice !== null ? formatPrice(item.unitPrice) + ' / u.' : 'Prix indisponible'"></p>
                                         </div>
                                     </div>
 
                                     <!-- Contrôles : Taille, Quantité, Prix ligne, Suppression -->
-                                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                                    <div class="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap sm:gap-3 shrink-0">
                                         <!-- Taille -->
                                         <div class="w-20 sm:w-24">
                                             <select :value="item.taille"
@@ -587,7 +655,7 @@
                                         <!-- Total Ligne -->
                                         <div class="min-w-[54px] text-right">
                                             <span class="font-black text-xs sm:text-sm text-slate-900"
-                                                x-text="'$' + item.linePrice"></span>
+                                                x-text="formatPrice(item.linePrice)"></span>
                                         </div>
 
                                         <!-- Supprimer Ligne -->
@@ -608,7 +676,7 @@
                                 <p class="text-[10px] font-bold text-slate-500 uppercase">Sans paiement immédiat en ligne</p>
                             </div>
                             <span class="font-black text-xl text-slate-900"
-                                x-text="'$' + cartTotal"></span>
+                                x-text="formatPrice(cartTotal)"></span>
                         </div>
 
                         <!-- Bouton Continuer Étape 1 -> Étape 2 -->
@@ -635,7 +703,7 @@
                     </button>
                     <div class="text-right">
                         <span class="font-black text-xs uppercase text-slate-900"
-                              x-text="cartCount + ' article(s) • Total : $' + cartTotal"></span>
+                              x-text="cartCount + ' article(s) • Total : ' + formatPrice(cartTotal)"></span>
                     </div>
                 </div>
 
@@ -647,62 +715,175 @@
                     </div>
                 </template>
 
-                <!-- Formulaire Informations Client -->
-                <form @submit.prevent="submitCartPrecommande()" class="space-y-3.5">
-                    <!-- Nom & Prénom -->
-                    <div class="space-y-1">
-                        <label class="block text-[11px] font-black uppercase text-slate-700">
-                            Nom & Prénom <span class="text-red-600">*</span>
-                        </label>
-                        <input type="text" x-model="customerInfo.nom" required placeholder="ex: Alex Dupont"
-                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <!-- Formulaire Informations Parent + Enfant + Personnalisation -->
+                <form @submit.prevent="submitCartPrecommande()" class="space-y-4">
+
+                    <template x-if="cartRequiresCustomization">
+                        <div class="space-y-1">
+                            <label for="orderPersonalisation" class="block text-[10px] font-black uppercase text-slate-600"
+                                x-text="`Personnalisation requise (${cartCustomizationFields}) *`"></label>
+                            <input id="orderPersonalisation" type="text" x-model="customerInfo.personnalisation"
+                                maxlength="100" required
+                                :placeholder="cartCustomizationFields"
+                                class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                        </div>
+                    </template>
+
+                    <!-- PARENT -->
+                    <div class="p-3.5 bg-white card-border space-y-3">
+                        <p class="text-[11px] font-black uppercase text-slate-900 tracking-wider border-b border-slate-200 pb-1.5">
+                            👤 Parent <span class="text-red-600">*</span>
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Prénom *</label>
+                                <input type="text" x-model="customerInfo.parent_prenom" required placeholder="Jean"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Nom *</label>
+                                <input type="text" x-model="customerInfo.parent_nom" required placeholder="DUPONT"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black uppercase text-slate-600">Email *</label>
+                            <input type="email" x-model="customerInfo.parent_email" required placeholder="jean@email.com"
+                                class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black uppercase text-slate-600">Téléphone *</label>
+                            <input type="tel" x-model="customerInfo.parent_telephone" required placeholder="06 12 34 56 78"
+                                class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                        </div>
                     </div>
 
-                    <!-- Email -->
-                    <div class="space-y-1">
-                        <label class="block text-[11px] font-black uppercase text-slate-700">
-                            Adresse Email <span class="text-red-600">*</span>
-                        </label>
-                        <input type="email" x-model="customerInfo.email" required placeholder="ex: alex@email.com"
-                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    <!-- ENFANT -->
+                    <div class="p-3.5 bg-white card-border space-y-3">
+                        <p class="text-[11px] font-black uppercase text-slate-900 tracking-wider border-b border-slate-200 pb-1.5">
+                            🎒 Enfant <span class="text-red-600">*</span>
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Prénom *</label>
+                                <input type="text" x-model="customerInfo.enfant_prenom" required placeholder="Charlotte"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Nom *</label>
+                                <input type="text" x-model="customerInfo.enfant_nom" required placeholder="DUPONT"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Email <span class="font-normal text-slate-400">(conseillé)</span></label>
+                                <input type="email" x-model="customerInfo.enfant_email" placeholder="charlotte@email.com"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Téléphone <span class="font-normal text-slate-400">(conseillé)</span></label>
+                                <input type="tel" x-model="customerInfo.enfant_telephone" placeholder="06 12 34 56 78"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Téléphone -->
-                    <div class="space-y-1">
-                        <label class="block text-[11px] font-black uppercase text-slate-700">
-                            Numéro de Téléphone <span class="text-red-600">*</span>
-                        </label>
-                        <input type="tel" x-model="customerInfo.telephone" required placeholder="ex: 06 12 34 56 78"
-                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                    <!-- GRAVURE USB (si USB dans le panier) -->
+                    <div x-show="cartHasUsb" class="p-3.5 bg-white card-border space-y-3">
+                        <p class="text-[11px] font-black uppercase text-slate-900 tracking-wider border-b border-slate-200 pb-1.5">
+                            🔌 Gravure USB <span class="text-red-600">*</span>
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Prénom à graver *</label>
+                                <input type="text" x-model="customerInfo.usb_prenom" placeholder="Charlotte"
+                                    :required="cartHasUsb"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Nom à graver *</label>
+                                <input type="text" x-model="customerInfo.usb_nom" placeholder="DUPONT"
+                                    :required="cartHasUsb"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Case à cocher : Se souvenir de mes infos sur cet appareil (DÉCOCHÉE PAR DÉFAUT) -->
-                    <div class="flex items-start gap-2.5 pt-1">
+                    <!-- MARQUAGE T-SHIRT (si T-shirt dans le panier) -->
+                    <div x-show="cartHasTshirt" class="p-3.5 bg-white card-border space-y-3">
+                        <p class="text-[11px] font-black uppercase text-slate-900 tracking-wider border-b border-slate-200 pb-1.5">
+                            👕 Marquage T-shirt <span class="text-red-600">*</span>
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Prénom à marquer *</label>
+                                <input type="text" x-model="customerInfo.tshirt_prenom" placeholder="Charlotte"
+                                    :required="cartHasTshirt"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black uppercase text-slate-600">Nom à marquer *</label>
+                                <input type="text" x-model="customerInfo.tshirt_nom" placeholder="DUPONT"
+                                    :required="cartHasTshirt"
+                                    class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black uppercase text-slate-600">Taille *</label>
+                            <select x-model="customerInfo.tshirt_taille" :required="cartHasTshirt"
+                                class="w-full px-3 py-2 text-xs font-black bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer">
+                                <option value="">Sélectionnez une taille</option>
+                                <option>S</option><option>M</option><option>L</option>
+                                <option>XL</option><option>2XL</option><option>3XL</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- REMARQUES -->
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black uppercase text-slate-600">
+                            Remarques <span class="font-normal text-slate-400">(optionnel)</span>
+                        </label>
+                        <textarea x-model="customerInfo.remarques" rows="2"
+                            placeholder="Informations complémentaires..."
+                            class="w-full px-3 py-2 text-xs font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"></textarea>
+                    </div>
+
+                    <!-- MÉMORISATION -->
+                    <div class="flex items-start gap-2.5">
+                        <input type="checkbox" id="notifyPriceDrops" x-model="customerInfo.notify_price_drops"
+                            class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
+                        <label for="notifyPriceDrops" class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
+                            Je souhaite être notifié(e) par e-mail à chaque baisse de prix des produits de ma commande.
+                        </label>
+                    </div>
+
+                    <!-- MÉMORISATION -->
+                    <div class="flex items-start gap-2.5">
                         <input type="checkbox" id="rememberInfo" x-model="rememberInfo"
                             class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
                         <label for="rememberInfo" class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
-                            Se souvenir de mes infos sur cet appareil
-                            <span class="block text-[10px] font-normal text-slate-500">
-                                Conserve votre nom, email et téléphone sur ce navigateur pour vos prochaines commandes.
-                            </span>
+                            Mémoriser mes infos parent sur cet appareil
+                            <span class="block text-[10px] font-normal text-slate-500">Nom, email et téléphone — jamais les données enfant.</span>
                         </label>
                     </div>
 
-                    <!-- Case RGPD (Obligatoire) : Jamais stockée dans localStorage -->
-                    <div class="flex items-start gap-2.5 pt-1">
+                    <!-- RGPD -->
+                    <div class="flex items-start gap-2.5">
                         <input type="checkbox" id="rgpdConsentCart" x-model="rgpdConsent" required
                             class="mt-0.5 w-4 h-4 rounded border-2 border-slate-900 text-slate-900 focus:ring-0 cursor-pointer">
                         <label for="rgpdConsentCart" class="text-[11px] font-bold text-slate-700 leading-tight cursor-pointer">
-                            J'accepte que mon adresse email et mon numéro de téléphone soient utilisés par le club ACELSPACE pour me recontacter au sujet de cette précommande.
+                            J'accepte que les données renseignées soient utilisées par le club AcelSpace pour le traitement de cette précommande.
                             <button type="button" @click="isPrivacyModalOpen = true"
                                 class="underline font-black text-slate-900 hover:text-slate-700 cursor-pointer">
                                 Politique de confidentialité
-                            </button>.
+                            </button>. <span class="text-red-600">*</span>
                         </label>
                     </div>
 
                     <!-- Boutons Actions -->
-                    <div class="pt-2 flex items-center gap-3">
+                    <div class="pt-1 flex items-center gap-3">
                         <button type="button" @click="goToCartStep(1)"
                             class="px-4 py-3 bg-white pill-border font-bold text-xs uppercase hover:bg-slate-900 hover:text-white transition-colors cursor-pointer">
                             RETOUR
@@ -729,7 +910,7 @@
                 <div class="space-y-2">
                     <h3 class="text-xl font-black uppercase text-slate-900">Précommande Enregistrée !</h3>
                     <p class="text-xs sm:text-sm text-slate-700 font-semibold max-w-sm mx-auto">
-                        Votre précommande a été enregistrée avec succès. Le club ACELSPACE vous recontactera dès que vos articles seront prêts.
+                        Votre précommande a été enregistrée avec succès. Le club AcelSpace vous recontactera dès que vos articles seront prêts.
                     </p>
                 </div>
 
@@ -741,6 +922,108 @@
                     class="w-full py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 transition-colors cursor-pointer">
                     FERMER
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SUIVI DE COMMANDE MODAL ──────────────────────────────────────────── -->
+    <div x-show="isTrackingModalOpen" x-cloak @keydown.escape.window="isTrackingModalOpen = false"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto"
+        x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100">
+        <div @click.away="isTrackingModalOpen = false"
+            class="bg-card-bg card-border w-full max-w-[95%] md:max-w-2xl lg:max-w-3xl p-4 sm:p-6 space-y-4 relative shadow-2xl my-2 sm:my-8 max-h-[90vh] overflow-y-auto scroll-smooth">
+            <button @click="isTrackingModalOpen = false" aria-label="Fermer le suivi de commande"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors">✕</button>
+            <div>
+                <h2 class="text-xl font-black uppercase tracking-tight text-slate-900">🔍 Suivre ma commande</h2>
+                <p class="mt-1 text-xs text-slate-600 font-semibold">Pour protéger vos informations, un code de vérification sera envoyé à l'e-mail associé à la commande.</p>
+            </div>
+            <form x-show="!trackingCodeSent" @submit.prevent="requestTrackingCode()" class="flex flex-col sm:flex-row gap-2">
+                <label for="trackingEmail" class="sr-only">Adresse e-mail de la commande</label>
+                <input id="trackingEmail" type="email" x-model="trackingEmail" required maxlength="100" autocomplete="email"
+                    placeholder="E-mail de la commande"
+                    class="flex-1 px-3 py-2 text-sm font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <button type="submit" :disabled="trackingLoading"
+                    class="px-4 py-2 bg-slate-900 text-white pill-border font-black text-xs uppercase hover:bg-slate-800 disabled:opacity-50">
+                    <span x-text="trackingLoading ? 'Envoi...' : 'Recevoir un code'"></span>
+                </button>
+            </form>
+            <form x-show="trackingCodeSent" @submit.prevent="trackOrder()" class="space-y-2">
+                <p class="text-xs text-slate-700 font-semibold">Saisissez le code reçu par e-mail. Vous pouvez préciser la référence pour retrouver une commande particulière.</p>
+                <label for="trackingCode" class="block text-xs font-black text-slate-800">Code de vérification</label>
+                <input id="trackingCode" type="text" x-model="trackingCode" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"
+                    class="w-full px-3 py-2 text-sm font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <label for="trackingReference" class="block text-xs font-black text-slate-800">Référence (facultatif)</label>
+                <input id="trackingReference" type="text" x-model="trackingReference" maxlength="44" placeholder="CMD-0042"
+                    class="w-full px-3 py-2 text-sm font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <div class="flex flex-wrap gap-2">
+                    <button type="submit" :disabled="trackingLoading"
+                        class="px-4 py-2 bg-slate-900 text-white pill-border font-black text-xs uppercase hover:bg-slate-800 disabled:opacity-50">
+                        <span x-text="trackingLoading ? 'Vérification...' : 'Afficher mes commandes'"></span>
+                    </button>
+                    <button type="button" @click="trackingCodeSent = false; trackingCode = ''; trackingError = ''; trackingNotice = ''"
+                        class="px-4 py-2 bg-white pill-border font-black text-xs uppercase hover:bg-slate-100">Changer d’e-mail</button>
+                </div>
+            </form>
+            <template x-if="trackingError">
+                <div class="p-3 bg-red-100 border-2 border-red-900 rounded text-xs font-bold text-red-950" x-text="trackingError"></div>
+            </template>
+            <template x-if="trackingNotice">
+                <div class="p-3 bg-sky-100 border-2 border-sky-900 rounded text-xs font-bold text-sky-950" x-text="trackingNotice"></div>
+            </template>
+            <template x-if="trackingSearched && trackingResults.length === 0">
+                <div class="p-4 bg-white card-border text-center text-sm font-bold text-slate-700">Aucune précommande trouvée pour cette recherche.</div>
+            </template>
+            <div class="space-y-2">
+                <template x-for="(order, index) in trackingResults" :key="`${order.reference}-${order.produit}-${order.taille}-${index}`">
+                    <article class="p-3 bg-white card-border space-y-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-black uppercase text-slate-500" x-text="order.reference"></p>
+                                <h3 class="break-words font-black text-sm text-slate-900" x-text="order.produit"></h3>
+                            </div>
+                            <span class="px-2 py-1 text-[10px] uppercase font-black border-2 rounded bg-sky-100 text-sky-950 border-sky-800"
+                                x-text="order.status_label || trackingStatusLabel(order.status)"></span>
+                        </div>
+                        <div class="flex flex-wrap justify-between gap-2 text-xs font-semibold text-slate-700">
+                            <span x-text="`${order.quantite} × ${order.taille || 'Taille unique'}`"></span>
+                            <time x-text="formatTrackingDate(order.date_creation)"></time>
+                        </div>
+                        <div class="overflow-x-auto overscroll-x-contain scroll-smooth pt-3 pb-2" aria-label="Avancement de la commande">
+                            <div class="grid min-w-[420px] grid-cols-5 gap-1 text-center">
+                                <template x-for="step in trackingSteps" :key="step.index">
+                                    <div class="relative flex flex-col items-center text-center">
+                                        <div x-show="step.index < trackingSteps.length"
+                                            class="absolute left-1/2 top-3 h-1 w-full"
+                                            :class="order.progress_index > step.index ? 'bg-emerald-500' : 'bg-slate-200'"></div>
+                                        <span class="relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-black"
+                                            :class="step.index < order.progress_index
+                                                ? 'bg-emerald-600 text-white border-emerald-700'
+                                                : (step.index === order.progress_index
+                                                    ? 'bg-sky-700 text-white border-sky-900 ring-2 ring-sky-200'
+                                                    : 'bg-slate-100 text-slate-500 border-slate-300')"
+                                            x-text="step.index < order.progress_index ? '✓' : step.index"></span>
+                                        <span class="mt-1 text-[10px] sm:text-[11px] font-bold leading-tight"
+                                            :class="step.index === order.progress_index ? 'text-sky-900' : (step.index < order.progress_index ? 'text-emerald-800' : 'text-slate-400')"
+                                            x-text="step.label"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-0.5 text-xs">
+                            <p class="font-semibold text-slate-600">
+                                Prix maximum estimé :
+                                <span :class="{ 'line-through': Number(order.current_price) < Number(order.max_price) }"
+                                    x-text="formatPrice(order.max_price)"></span>
+                            </p>
+                            <p class="font-black text-emerald-800">
+                                Prix actuel à payer :
+                                <span x-text="formatPrice(order.current_price)"></span>
+                            </p>
+                        </div>
+                    </article>
+                </template>
             </div>
         </div>
     </div>
@@ -760,7 +1043,7 @@
                 <span>🛡️</span> Politique de Confidentialité (RGPD)
             </h2>
 
-            <div class="space-y-3 text-xs text-slate-800 font-medium leading-relaxed">
+            <div class="break-words space-y-3 text-xs text-slate-800 font-medium leading-relaxed">
                 <div class="p-3 bg-white pill-border space-y-1">
                     <h3 class="font-black uppercase text-slate-900 text-[11px]">1. Données collectées</h3>
                     <p class="text-slate-700">Nom & Prénom, adresse email, numéro de téléphone,
@@ -769,8 +1052,8 @@
 
                 <div class="p-3 bg-white pill-border space-y-1">
                     <h3 class="font-black uppercase text-slate-900 text-[11px]">2. Finalité du traitement</h3>
-                    <p class="text-slate-700">Ces données sont strictement destinées au traitement logistique des
-                        précommandes et à la prise de contact par les membres du bureau du club ACELSPACE pour le suivi de votre commande. Aucun usage
+                    <p class="text-slate-700">Ces données sont strictly destinées au traitement logistique des
+                        précommandes et à la prise de contact par les membres du bureau du club AcelSpace pour le suivi de votre commande. Aucun usage
                         commercial tiers ni revente.</p>
                 </div>
 
@@ -803,11 +1086,10 @@
             class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
             <button @click="isAboutOpen = false"
                 class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
-            <h2 class="text-xl font-black uppercase tracking-tight">À PROPOS DE ACELSPACE</h2>
-            <div class="space-y-2 text-xs text-slate-800 font-medium leading-relaxed">
-                <p>Depuis 2014, <strong>ACELSPACE</strong> rassemble la communauté locale autour de valeurs de passion
-                    et de partage.</p>
-                <p>Notre boutique vitrine présente la collection officielle de merch et goodies à l'effigie du club.</p>
+            <h2 class="text-xl font-black uppercase tracking-tight">À PROPOS DE AcelSpace</h2>
+            <div class="break-words space-y-2 text-xs text-slate-800 font-medium leading-relaxed">
+                <p>Depuis 2014, <strong>AcelSpace</strong> est un lieu où les jeunes peuvent imaginer et créer leur fusée, depuis le plan jusqu’à la réalisation, dans un esprit d’entraide et de travail de groupe.</p>
+                <p>Notre boutique vitrine présente la collection officielle de goodies aux couleurs du club.</p>
             </div>
             <button @click="isAboutOpen = false"
                 class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
@@ -823,10 +1105,10 @@
             <button @click="isContactOpen = false"
                 class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
             <h2 class="text-xl font-black uppercase tracking-tight">CONTACT DU CLUB</h2>
-            <div class="space-y-2 text-xs font-mono">
+            <div class="break-words space-y-2 text-xs font-mono">
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">EMAIL</span>
-                    <span class="font-bold text-slate-900 text-sm">contact@acelspace.org</span>
+                    <span class="font-bold text-slate-900 text-sm">acelspacfx@gmail.com</span>
                 </div>
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">INSTAGRAM</span>
@@ -836,6 +1118,56 @@
             <button @click="isContactOpen = false"
                 class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
         </div>
+    </div>
+
+    <section x-show="!cookieConsentSaved" x-cloak role="dialog" aria-label="Consentement aux cookies"
+        class="fixed inset-x-3 bottom-3 z-[80] mx-auto max-w-3xl bg-white card-border p-4 shadow-2xl sm:inset-x-6 sm:bottom-6">
+        <p class="text-sm font-black text-slate-900">Vos choix de confidentialité</p>
+        <p class="mt-1 break-words text-xs font-semibold text-slate-700">Ce site utilise uniquement les éléments techniques nécessaires. Aucun outil d’audience ou traceur non essentiel n’est chargé. Vous pouvez enregistrer votre choix ou consulter les préférences.</p>
+        <p x-show="cookiePreferencesError" role="alert" class="mt-2 text-xs font-bold text-red-800" x-text="cookiePreferencesError"></p>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <button @click="saveCookiePreferences(true)"
+                class="flex-1 min-w-[140px] px-4 py-2 bg-slate-900 text-white pill-border text-xs font-black uppercase hover:bg-slate-800">Tout accepter</button>
+            <button @click="saveCookiePreferences(false)"
+                class="flex-1 min-w-[140px] px-4 py-2 bg-slate-900 text-white pill-border text-xs font-black uppercase hover:bg-slate-800">Tout refuser</button>
+            <button @click="openCookiePreferences()"
+                class="flex-1 min-w-[140px] px-4 py-2 bg-white pill-border text-xs font-black uppercase hover:bg-slate-100">Gérer les préférences</button>
+        </div>
+    </section>
+
+    <div x-show="cookiePreferencesOpen" x-cloak @keydown.escape.window="cookiePreferencesOpen = false"
+        class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/70 p-4">
+        <section @click.away="cookiePreferencesOpen = false" role="dialog" aria-modal="true" aria-labelledby="cookiePreferencesTitle"
+            class="w-full max-w-lg space-y-4 bg-white card-border p-6 shadow-2xl">
+            <h2 id="cookiePreferencesTitle" class="text-lg font-black uppercase">Gestion des cookies</h2>
+            <p class="break-words text-sm font-semibold text-slate-700">Les éléments techniques indispensables ne peuvent pas être désactivés. Aucun traceur d’audience ou de publicité n’est actuellement intégré au site.</p>
+            <label class="flex items-center justify-between gap-3 border-y border-slate-200 py-3 text-sm font-bold">
+                <span>Mesure d’audience (aucun outil actuellement chargé)</span>
+                <input type="checkbox" x-model="cookiePreferences.analytics" aria-label="Autoriser la mesure d’audience">
+            </label>
+            <p x-show="cookiePreferencesError" role="alert" class="text-xs font-bold text-red-800" x-text="cookiePreferencesError"></p>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button @click="saveCookiePreferences(false)" class="px-4 py-2 bg-white pill-border text-xs font-black uppercase">Tout refuser</button>
+                <button @click="saveCookiePreferences(cookiePreferences.analytics)" class="px-4 py-2 bg-slate-900 text-white pill-border text-xs font-black uppercase">Enregistrer mon choix</button>
+            </div>
+        </section>
+    </div>
+
+    <div x-show="lightboxOpen" x-cloak @keydown.escape.window="closeLightbox()" @click.self="closeLightbox()"
+        class="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" role="dialog" aria-modal="true" aria-label="Aperçu de l’image produit">
+        <button @click="closeLightbox()" type="button" aria-label="Fermer l’aperçu"
+            class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/90 text-slate-900 text-2xl font-black hover:bg-white transition-colors">
+            ✕
+        </button>
+        <img :src="currentLightboxIndex === 1 && lightboxImage2 ? lightboxImage2 : lightboxImage"
+            alt="Image produit en grand format" @click.stop
+            class="max-h-[90vh] max-w-full w-full object-contain rounded-lg shadow-2xl">
+        <button x-show="lightboxImage2" x-cloak @click="toggleLightboxImage()" type="button"
+            class="absolute bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/90 text-slate-900 text-xs font-black uppercase hover:bg-white transition-colors">
+            Changer la vue
+        </button>
     </div>
 
 </body>

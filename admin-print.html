@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACELSPACE — Liste des précommandes</title>
+    <title>AcelSpace — Liste des précommandes</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/src/style.css">
     <style>
@@ -140,7 +140,7 @@
                 <header class="border-b-2 border-black pb-4 flex items-end justify-between gap-4">
                     <div>
                         <h1 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-black">
-                            ACELSPACE — Liste des précommandes
+                            AcelSpace — Liste des précommandes
                         </h1>
                         <p class="text-xs font-semibold text-black uppercase tracking-wider pt-0.5">
                             Liste de remise officielle du matériel & merch
@@ -175,13 +175,18 @@
                                 </td>
 
                                 <!-- Nom Prénom -->
-                                <td class="font-black uppercase text-black" x-text="p && p.nom ? p.nom : 'CLIENT SANS NOM'"></td>
+                                <td class="font-black uppercase text-black">
+                                    <div x-text="p && p.nom ? p.nom : 'CLIENT SANS NOM'"></div>
+                                    <div x-show="p && p.enfants" class="mt-0.5 text-xs font-medium normal-case text-gray-500">
+                                        Enfant : <span x-text="p.enfants"></span>
+                                    </div>
+                                </td>
 
                                 <!-- Commande concaténée -->
-                                <td class="font-semibold text-black" x-text="p && p.commande ? p.commande : '-'"></td>
+                                <td class="font-semibold text-black whitespace-pre-line" x-text="p && p.commande ? p.commande : '-'"></td>
 
-                                <!-- Total en $ -->
-                                <td class="font-black text-right text-black" x-text="'$' + (p && p.total != null ? p.total : 0)"></td>
+                                <!-- Total en € -->
+                                <td class="font-black text-right text-black" x-text="(p && p.total != null ? p.total : 0) + ' €'"></td>
                             </tr>
                         </template>
 
@@ -191,7 +196,7 @@
                                 TOTAL : <span x-text="(totalPersons || 0) + ' client(s)'"></span>
                             </td>
                             <td class="p-3 border-2 border-black text-right text-black uppercase" colspan="2">
-                                MONTANT TOTAL : <span x-text="'$' + (grandTotalAmount || 0)"></span>
+                                MONTANT TOTAL : <span x-text="(grandTotalAmount || 0) + ' €'"></span>
                             </td>
                         </tr>
                     </tbody>
@@ -222,11 +227,7 @@
 
             async loadData() {
                 try {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const statut = urlParams.get('statut') || 'all';
-                    const produit = urlParams.get('produit') || 'all';
-
-                    const res = await fetch(`/api/admin/print-data?statut=${encodeURIComponent(statut)}&produit=${encodeURIComponent(produit)}`, {
+                    const res = await fetch('/api/admin/print-data', {
                         credentials: 'include',
                         headers: {
                             'Accept': 'application/json'
