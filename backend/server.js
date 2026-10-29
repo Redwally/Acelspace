@@ -1341,7 +1341,7 @@ app.delete('/api/admin/clients/:id', requireAdmin, (req, res) => {
 app.get('/api/admin/export', requireAdmin, (req, res) => {
     try {
         const rows = db.prepare('SELECT p.*, c.nom as client_nom, c.email as client_email, c.telephone as client_telephone, pr.requires_customization as product_requires_customization FROM precommandes p LEFT JOIN clients c ON c.id = p.client_id LEFT JOIN products pr ON pr.id = p.product_id ORDER BY p.date_creation DESC, p.commande_ref DESC, p.id ASC').all();
-        const headers = ['Réf. Commande', 'Date', 'Nom Parent', 'Prénom Parent', 'Email Parent', 'Téléphone Parent', 'Nom Enfant', 'Prénom Enfant', 'Produit', 'Taille', 'Quantité', 'Prix Total', 'Statut', 'Personnalisation', 'Remarques'];
+        const headers = ['Réf. Commande', 'Date', 'Nom Parent', 'Prénom Parent', 'Email Parent', 'Téléphone Parent', 'Nom Enfant', 'Prénom Enfant', 'Produit', 'Taille', 'Quantité', 'Prix Total', 'Statut', 'Personnalisation', "Remarques (avec adresse mail et téléphone de l'enfant si renseigné)"];
         const csvLines = [headers.join(';')];
         rows.forEach(r => {
             const date = r.date_creation ? new Date(r.date_creation).toLocaleString('fr-FR') : '';
