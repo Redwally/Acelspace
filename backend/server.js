@@ -334,6 +334,8 @@ function sanitizeCSV(val, isText = false) {
     return '"' + str.replace(/"/g, '""') + '"';
 }
 
+const escapeCSV = (val) => '"' + String(val || '').replace(/"/g, '""').replace(/\n|\r/g, ' ') + '"';
+
 function requireAdmin(req, res, next) {
     const session = getAdminSession(req);
     if (session) {
@@ -1338,24 +1340,55 @@ app.delete('/api/admin/clients/:id', requireAdmin, (req, res) => {
 
 app.get('/api/admin/export', requireAdmin, (req, res) => {
     try {
-        const rows = db.prepare("SELECT p.*, pr.requires_customization as product_requires_customization FROM precommandes p LEFT JOIN products pr ON pr.id = p.product_id WHERE COALESCE(UPPER(TRIM(p.status)), '') NOT IN ('ANNULE', 'ANNULÉ') ORDER BY p.date_creation DESC, p.commande_ref DESC, p.id ASC").all();
-        const headers = ['ID Ligne', 'Réf. Commande', 'Client ID', 'Date', 'Nom', 'Prénom enfant', 'Nom enfant', 'Email', 'Téléphone', 'Produit', 'Taille', 'Quantite', 'Prix Estime', 'Statut', 'Consentement RGPD', 'Date Consentement', 'Remarques', 'Personnalisation'];
-        const csvLines = [headers.map(h => sanitizeCSV(h)).join(';')];
+        const rows = db.prepare('SELECT p.*, c.nom as client_nom, c.email as client_email, c.telephone as client_telephone, pr.requires_customization as product_requires_customization FROM precommandes p LEFT JOIN clients c ON c.id = p.client_id LEFT JOIN products pr ON pr.id = p.product_id ORDER BY p.date_creation DESC, p.commande_ref DESC, p.id ASC').all();
+        const headers = ['Réf. Commande', 'Date', 'Nom Parent', 'Prénom Parent', 'Email Parent', 'Téléphone Parent', 'Nom Enfant', 'Prénom Enfant', 'Produit', 'Taille', 'Quantité', 'Prix Total', 'Statut', 'Personnalisation', 'Remarques'];
+        const csvLines = [headers.join(';')];
         rows.forEach(r => {
-            const fd = r.date_creation ? new Date(r.date_creation).toLocaleString('fr-FR') : '-';
-            const fcd = r.date_consentement ? new Date(r.date_consentement).toLocaleString('fr-FR') : fd;
-            const emailVal = r.email || r.contact || '-';
-            const telVal = r.telephone || '-';
+            const date = r.date_creation ? new Date(r.date_creation).toLocaleString('fr-FR') : '';
+            const parentFullName = String(r.nom || r.client_nom || '').trim();
+            const parentNameParts = parentFullName.split(/\s+/).filter(Boolean);
+            const parentPrenom = parentNameParts.length > 1 ? parentNameParts.shift() : '';
+            const parentNom = parentNameParts.length > 0 ? parentNameParts.join(' ') : parentFullName;
+            const email = r.email || r.client_email || r.contact || '';
+            const telephone = r.telephone || r.client_telephone || '';
             const refVal = r.commande_ref || ('CMD-' + r.id);
             const personnalisation = Number(r.product_requires_customization) === 1 && Number(r.no_customization) !== 1
                 ? cleanPersonalization(r.personnalisation)
                 : '';
-            csvLines.push([r.id, refVal, formatClientId(r.client_id), fd, r.nom, r.student_first_name || '', r.student_last_name || '', sanitizeCSV(emailVal), sanitizeCSV(telVal, true), r.produit, r.taille, r.quantite, r.prix_estime, ORDER_STATUS_LABELS[r.status] || r.status, r.consentement === 1 ? 'Oui' : 'Non', fcd, sanitizeCSV(r.remarques || '', true), sanitizeCSV(personnalisation, true)].map((val, idx) => (idx === 7 || idx === 8 || idx === 16 || idx === 17 ? val : sanitizeCSV(val))).join(';'));
+            const status = r.status || r.statut || '';
+            const remarques = String(r.remarques || '').split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(line => !/^\[ENFANT\]/i.test(line))
+                .map(line => line
+                    .replace(/^\[(?:REMARQUES|GRAVURE USB|MARQUAGE TSHIRT)\]\s*/i, '')
+                    .replace(/^(?:Email enfant|Tél enfant):\s*/i, ''))
+                .filter(Boolean)
+                .join(' ');
+            const prixTotal = Number.isFinite(Number(r.prix_estime))
+                ? Number(r.prix_estime).toFixed(2).replace('.', ',')
+                : '';
+            csvLines.push([
+                refVal,
+                date,
+                parentNom,
+                parentPrenom,
+                email,
+                telephone,
+                r.student_last_name || '',
+                r.student_first_name || '',
+                r.produit,
+                r.taille,
+                r.quantite,
+                prixTotal,
+                ORDER_STATUS_LABELS[status] || status,
+                personnalisation,
+                remarques
+            ].map(escapeCSV).join(';'));
         });
         const filename = 'precommandes-acelspace-' + new Date().toISOString().slice(0, 10) + '.csv';
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
-        return res.send('\uFEFF' + csvLines.join('\r\n'));
+        return res.send('\uFEFF' + csvLines.join('\n') + '\n');
     } catch(error) { console.error('Erreur export CSV:', error); return res.status(500).json({ success: false, message: 'Erreur export CSV.' }); }
 });
 
