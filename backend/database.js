@@ -357,10 +357,15 @@ db.exec(`
  * des précommandes non-annulées.
  *
  * @param {number} product_id
+ * @param {number} [additional_qty=0] Quantité à ajouter avant insertion (panier en cours).
  * @returns {{ unit_price: number, tier_id: number, qty_total: number } | null}
  *   null si aucune grille n'est définie pour ce produit.
  */
-export function getCurrentPrice(product_id) {
+export function getCurrentPrice(product_id, additional_qty = 0) {
+    if (!Number.isSafeInteger(additional_qty) || additional_qty < 0) {
+        throw new TypeError('additional_qty doit être un entier positif ou nul.');
+    }
+
     // Vérifie qu'une grille existe
     const tierCount = db.prepare(`
         SELECT COUNT(*) as c FROM price_tiers WHERE product_id = ?
@@ -372,19 +377,21 @@ export function getCurrentPrice(product_id) {
     const row = db.prepare(`
         SELECT COALESCE(SUM(quantite), 0) as total
         FROM precommandes
-        WHERE product_id = ? AND statut != 'annulee'
+        WHERE product_id = ?
+          AND COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ')
+          AND COALESCE(LOWER(TRIM(statut)), '') != 'annulee'
     `).get(product_id);
 
-    const qty_total = row ? row.total : 0;
+    const qty_total = (row ? row.total : 0) + additional_qty;
 
-    // Palier actif : qty_min <= total < qty_max, ou dernier palier (qty_max IS NULL)
+    // Les bornes partagées appartiennent au palier qui commence à cette quantité.
     const tier = db.prepare(`
         SELECT id, unit_price
         FROM price_tiers
         WHERE product_id = ?
           AND qty_min <= ?
-          AND (qty_max IS NULL OR qty_max > ?)
-        ORDER BY qty_min DESC
+          AND (qty_max IS NULL OR qty_max >= ?)
+        ORDER BY qty_min DESC, CASE WHEN qty_max IS NULL THEN 1 ELSE 0 END, qty_max ASC, id ASC
         LIMIT 1
     `).get(product_id, qty_total, qty_total);
 
