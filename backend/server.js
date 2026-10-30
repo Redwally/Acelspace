@@ -791,19 +791,6 @@ app.post('/api/precommande', precommandeLimiter, (req, res) => {
                 return res.status(400).json({ success: false, message: 'L’option sans personnalisation n’est pas disponible pour cet article.' });
             }
 
-            // Prix dynamique selon grille dégressive
-            const priceInfo = getCurrentPrice(productInfo.id);
-            const unitPrice = priceInfo !== null ? priceInfo.unit_price : productInfo.price;
-            const linePrice = Math.round(unitPrice * qty * 100) / 100;
-
-            // Snapshot du palier avant insertion (une seule fois par produit)
-            if (!tierSnapshotBefore.has(productInfo.id)) {
-                tierSnapshotBefore.set(productInfo.id, {
-                    tier_id: priceInfo ? priceInfo.tier_id : null,
-                    unit_price: unitPrice,
-                });
-            }
-
             const isCustomizable = Number(productInfo.requires_customization) === 1;
             const itemPersonalization = item.personalization === undefined
                 ? cleanPersonalization(personnalisationClean)
@@ -817,14 +804,36 @@ app.post('/api/precommande', precommandeLimiter, (req, res) => {
                 taille: cleanTaille,
                 noCustomization,
                 personnalisation: linePersonalization,
-                qty,
-                linePrice,
-                unitPrice
+                qty
             });
         }
 
         if (verifiedLines.some(line => Number(line.product.requires_customization) === 1 && line.noCustomization !== true && !line.personnalisation)) {
             return res.status(400).json({ success: false, message: 'Une personnalisation est obligatoire pour un ou plusieurs produits de votre panier.' });
+        }
+
+        // Le même palier s'applique à toutes les tailles d'un produit dans ce panier.
+        const requestedByProduct = new Map();
+        for (const line of verifiedLines) {
+            const requested = requestedByProduct.get(line.product.id) || { product: line.product, qty: 0 };
+            requested.qty += line.qty;
+            requestedByProduct.set(line.product.id, requested);
+        }
+
+        const unitPriceByProduct = new Map();
+        for (const [productId, { product, qty }] of requestedByProduct) {
+            const priceBefore = getCurrentPrice(productId);
+            tierSnapshotBefore.set(productId, {
+                tier_id: priceBefore ? priceBefore.tier_id : null,
+                unit_price: priceBefore ? priceBefore.unit_price : product.price,
+            });
+
+            const priceInfo = getCurrentPrice(productId, qty);
+            unitPriceByProduct.set(productId, priceInfo ? priceInfo.unit_price : product.price);
+        }
+        for (const line of verifiedLines) {
+            line.unitPrice = unitPriceByProduct.get(line.product.id);
+            line.linePrice = Math.round(line.unitPrice * line.qty * 100) / 100;
         }
 
         // 3b. Remarques consolidées
