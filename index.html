@@ -1086,9 +1086,9 @@
             class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
             <button @click="isAboutOpen = false"
                 class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
-            <h2 class="text-xl font-black uppercase tracking-tight">À PROPOS DE AcelSpace</h2>
+            <h2 class="text-xl font-black uppercase tracking-tight">Le club AcelSpace</h2>
             <div class="break-words space-y-2 text-xs text-slate-800 font-medium leading-relaxed">
-                <p>Depuis 2014, <strong>AcelSpace</strong> est un lieu où les jeunes peuvent imaginer et créer leur fusée, depuis le plan jusqu’à la réalisation, dans un esprit d’entraide et de travail de groupe.</p>
+                <p>Depuis 2014, le club fusée <strong>AcelSpace</strong> est un lieu où les jeunes peuvent imaginer et créer leur fusée, depuis le plan jusqu’à la réalisation, dans un esprit d’entraide et de travail de groupe.</p>
                 <p>Notre boutique vitrine présente la collection officielle de goodies aux couleurs du club.</p>
             </div>
             <button @click="isAboutOpen = false"
@@ -1101,10 +1101,10 @@
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
 
         <div @click.away="isContactOpen = false"
-            class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
+            class="bg-card-bg card-border w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4 relative shadow-2xl">
             <button @click="isContactOpen = false"
                 class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
-            <h2 class="text-xl font-black uppercase tracking-tight">CONTACT DU CLUB</h2>
+            <h2 class="text-xl font-black uppercase tracking-tight">CONTACTER LE CLUB</h2>
             <div class="break-words space-y-2 text-xs font-mono">
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">EMAIL</span>
@@ -1115,6 +1115,39 @@
                     <span class="font-bold text-slate-900 text-sm">@acelspace78</span>
                 </div>
             </div>
+            <form @submit.prevent="submitContact($event)" class="p-4 bg-white pill-border space-y-3">
+                <h3 class="font-black uppercase text-sm">Envoyer un message</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="block space-y-1 text-xs font-bold">
+                        <span>Nom <span aria-hidden="true">*</span></span>
+                        <input name="nom" type="text" required maxlength="100" autocomplete="family-name"
+                            class="w-full p-2 bg-card-bg pill-border font-medium">
+                    </label>
+                    <label class="block space-y-1 text-xs font-bold">
+                        <span>Prénom <span aria-hidden="true">*</span></span>
+                        <input name="prenom" type="text" required maxlength="100" autocomplete="given-name"
+                            class="w-full p-2 bg-card-bg pill-border font-medium">
+                    </label>
+                </div>
+                <label class="block space-y-1 text-xs font-bold">
+                    <span>Adresse e-mail <span aria-hidden="true">*</span></span>
+                    <input name="email" type="email" required maxlength="254" autocomplete="email"
+                        class="w-full p-2 bg-card-bg pill-border font-medium">
+                </label>
+                <label class="block space-y-1 text-xs font-bold">
+                    <span>Message <span aria-hidden="true">*</span></span>
+                    <textarea name="message" required maxlength="5000" rows="4"
+                        class="w-full p-2 bg-card-bg pill-border font-medium resize-y"></textarea>
+                </label>
+                <button type="submit" :disabled="contactSubmitting"
+                    class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-slate-800 disabled:opacity-60">
+                    <span x-text="contactSubmitting ? 'ENVOI…' : 'ENVOYER'"></span>
+                </button>
+                <p x-show="contactSuccess" x-text="contactSuccess" role="status" aria-live="polite"
+                    class="text-xs font-bold text-emerald-800"></p>
+                <p x-show="contactError" x-text="contactError" role="alert"
+                    class="text-xs font-bold text-red-800"></p>
+            </form>
             <button @click="isContactOpen = false"
                 class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
         </div>
