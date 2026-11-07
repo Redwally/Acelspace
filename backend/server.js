@@ -120,7 +120,9 @@ async function sendTierChangeEmail(product_id, old_price, new_price) {
         const row = db.prepare(`
             SELECT SUM(quantite) as qty
             FROM precommandes
-            WHERE product_id = ? AND email = ? AND statut != 'annulee'
+            WHERE product_id = ? AND email = ?
+              AND COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ')
+              AND COALESCE(LOWER(TRIM(statut)), '') != 'annulee'
         `).get(product_id, email);
         const qty = row?.qty || 0;
         const newTotal = Math.round(new_price * qty * 100) / 100;
@@ -283,6 +285,7 @@ app.use('/uploads', express.static(uploadsDir, { dotfiles: 'deny', index: false 
 // ─── Rate Limiters
 const precommandeLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Trop de requêtes. Veuillez réessayer dans quelques minutes.' } });
 const otpLimiter = rateLimit({ windowMs: 15*60*1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Trop de requêtes de suivi. Réessayez dans 15 minutes.' } });
+const contactLimiter = rateLimit({ windowMs: 15*60*1000, max: 5, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Trop de messages envoyés. Réessayez dans 15 minutes.' } });
 const trackingChallenges = new Map();
 const trackingLocks = new Map();
 const adminSessions = new Map();
@@ -334,7 +337,11 @@ function sanitizeCSV(val, isText = false) {
     return '"' + str.replace(/"/g, '""') + '"';
 }
 
-const escapeCSV = (val) => '"' + String(val || '').replace(/"/g, '""').replace(/\n|\r/g, ' ') + '"';
+const escapeCSV = (val) => {
+    let str = String(val ?? '').replace(/\n|\r/g, ' ');
+    if (/^[\s\uFEFF]*[=+\-@]/.test(str)) str = "'" + str;
+    return '"' + str.replace(/"/g, '""') + '"';
+};
 
 function requireAdmin(req, res, next) {
     const session = getAdminSession(req);
@@ -393,6 +400,20 @@ const ORDER_STATUSES = [
     { value: 'ANNULE', label: 'Annulé' }
 ];
 const ORDER_STATUS_LABELS = Object.fromEntries(ORDER_STATUSES.map(status => [status.value, status.label]));
+const ORDER_STATUS_BY_LEGACY_STATUS = {
+    en_attente: 'EN_ATTENTE_PAIEMENT',
+    confirmee: 'PAYE',
+    livree: 'REMIS',
+    annulee: 'ANNULE'
+};
+const LEGACY_STATUS_BY_ORDER_STATUS = {
+    EN_ATTENTE_PAIEMENT: 'en_attente',
+    PAYE: 'confirmee',
+    EN_COMMANDE: 'confirmee',
+    PRET_AU_LOCAL: 'confirmee',
+    REMIS: 'livree',
+    ANNULE: 'annulee'
+};
 
 function validateProductBody(body, isNew = false) {
     const errors = [];
@@ -473,6 +494,70 @@ function validateProductBody(body, isNew = false) {
 }
 
 // ─── Routes Publiques
+
+app.post('/api/contact', contactLimiter, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const body = req.body || {};
+    if (hasInvalidTextFields(body, { nom: 100, prenom: 100, email: 254, message: 5000 })) {
+        return res.status(400).json({ success: false, message: 'Les informations saisies sont invalides.' });
+    }
+
+    const nom = typeof body.nom === 'string' ? body.nom.trim().replace(/\s+/g, ' ') : '';
+    const prenom = typeof body.prenom === 'string' ? body.prenom.trim().replace(/\s+/g, ' ') : '';
+    const email = typeof body.email === 'string' ? normalizeEmail(body.email.trim()) : '';
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
+
+    if (!nom || !prenom || !message || !isValidEmail(email)) {
+        return res.status(400).json({ success: false, message: 'Veuillez renseigner tous les champs avec une adresse e-mail valide.' });
+    }
+
+    const transporter = createMailTransporter();
+    if (!transporter) {
+        return res.status(503).json({ success: false, message: 'Le formulaire de contact est temporairement indisponible.' });
+    }
+
+    const escapeHtml = value => value.replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[char]);
+    const safeMessage = escapeHtml(message).replace(/\r?\n/g, '<br>');
+
+    try {
+        await Promise.all([
+            transporter.sendMail({
+                from: `"AcelSpace Boutique" <${process.env.GMAIL_USER}>`,
+                to: email,
+                subject: 'Confirmation de réception de votre message - AcelSpace',
+                html: `Votre message a bien été envoyé. Nous vous recontacterons sur cette adresse e-mail dans les plus brefs délais.<br><br>Rappel de votre message :<br><i>${safeMessage}</i>`
+            }),
+            transporter.sendMail({
+                from: `"AcelSpace Boutique" <${process.env.GMAIL_USER}>`,
+                to: 'acelspacfx@gmail.com',
+                subject: `Nouveau message de contact : ${nom} ${prenom}`,
+                text: `Nom : ${nom}\nPrénom : ${prenom}\nEmail de contact : ${email}\n\nMessage :\n${message}`
+            })
+        ]);
+    } catch (error) {
+        console.error('Erreur envoi du formulaire de contact :', error);
+        return res.status(500).json({ success: false, message: 'Impossible d’envoyer votre message pour le moment. Veuillez réessayer plus tard.' });
+    }
+
+    fetch('https://ntfy.sh/acelspace-contact', {
+        method: 'POST',
+        body: message,
+        headers: {
+            'Title': `Nouveau mail de ${nom} ${prenom}`,
+            'Tags': 'email,envelope'
+        }
+    }).then(response => {
+        if (!response.ok) console.error(`Erreur d'envoi NTFY contact: HTTP ${response.status}`);
+    }).catch(error => console.error('Erreur d’envoi NTFY contact:', error));
+
+    return res.json({ success: true });
+});
 
 /** GET /api/products — produits actifs + prix dynamique si grille définie */
 app.get('/api/products', (req, res) => {
@@ -1204,19 +1289,25 @@ app.get('/api/admin/precommandes', requireAdmin, (req, res) => {
         const allRecords = db.prepare('SELECT client_id, produit, taille, statut, status, quantite, prix_estime, commande_ref FROM precommandes').all();
         const totalUQ = db.prepare('SELECT COUNT(DISTINCT client_id) as count FROM precommandes').get();
         const uniqueOrders = db.prepare('SELECT COUNT(DISTINCT COALESCE(commande_ref, id)) as count FROM precommandes').get();
-        const activeRecords = allRecords.filter(r => !['ANNULE', 'ANNULÉ'].includes(String(r.status || '').trim().toUpperCase()));
+        const activeRecords = allRecords.filter(r =>
+            !['ANNULE', 'ANNULÉ'].includes(String(r.status || '').trim().toUpperCase())
+            && String(r.statut || '').trim().toLowerCase() !== 'annulee'
+        );
         const stats = {
             totalOrders: uniqueOrders ? uniqueOrders.count : allRecords.length,
             totalLines: allRecords.length,
             totalUniqueClients: totalUQ ? totalUQ.count : 0,
             totalRevenue: activeRecords.reduce((acc, c) => acc + (Number(c.prix_estime) || 0), 0),
             byStatus: {
-                en_attente: allRecords.filter(r => r.status === 'EN_ATTENTE_PAIEMENT' || r.status === 'EN_COMMANDE').length,
-                confirmee: allRecords.filter(r => r.status === 'PAYE' || r.status === 'PRET_AU_LOCAL').length,
-                livree: allRecords.filter(r => r.status === 'REMIS').length,
-                annulee: allRecords.filter(r => r.status === 'ANNULE' || r.statut === 'annulee').length
+                en_attente: activeRecords.filter(r => r.status === 'EN_ATTENTE_PAIEMENT' || r.status === 'EN_COMMANDE').length,
+                confirmee: activeRecords.filter(r => r.status === 'PAYE' || r.status === 'PRET_AU_LOCAL').length,
+                livree: activeRecords.filter(r => r.status === 'REMIS').length,
+                annulee: allRecords.filter(r =>
+                    ['ANNULE', 'ANNULÉ'].includes(String(r.status || '').trim().toUpperCase())
+                    || String(r.statut || '').trim().toLowerCase() === 'annulee'
+                ).length
             },
-            recapByProductSize: db.prepare("SELECT produit, taille, SUM(quantite) as quantite, COUNT(*) as count, SUM(prix_estime) as total_prix FROM precommandes WHERE COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ') GROUP BY produit, taille ORDER BY produit ASC, taille ASC").all()
+            recapByProductSize: db.prepare("SELECT produit, taille, SUM(quantite) as quantite, COUNT(*) as count, SUM(prix_estime) as total_prix FROM precommandes WHERE COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ') AND COALESCE(LOWER(TRIM(statut)), '') != 'annulee' GROUP BY produit COLLATE BINARY, taille COLLATE BINARY ORDER BY produit COLLATE BINARY ASC, taille COLLATE BINARY ASC").all()
         };
         return res.json({ success: true, precommandes, stats });
     } catch(error) { console.error('Erreur GET precommandes:', error); return res.status(500).json({ success: false, message: 'Erreur données.' }); }
@@ -1243,7 +1334,8 @@ app.patch('/api/admin/precommandes/:id/status', requireAdmin, (req, res) => {
         if (!isPositiveIntegerParam(id) || !Object.hasOwn(ORDER_STATUS_LABELS, status)) {
             return res.status(400).json({ success: false, message: 'Commande ou statut invalide.' });
         }
-        const result = db.prepare('UPDATE precommandes SET status = ? WHERE id = ?').run(status, Number(id));
+        const result = db.prepare('UPDATE precommandes SET status = ?, statut = ? WHERE id = ?')
+            .run(status, LEGACY_STATUS_BY_ORDER_STATUS[status], Number(id));
         if (result.changes === 0) {
             return res.status(404).json({ success: false, message: 'Commande introuvable.' });
         }
@@ -1272,8 +1364,10 @@ app.patch('/api/admin/precommandes/:id/status-all', requireAdmin, (req, res) => 
             const order = db.prepare('SELECT commande_ref FROM precommandes WHERE id = ?').get(Number(id));
             if (!order) return { changes: 0 };
             return order.commande_ref
-                ? db.prepare('UPDATE precommandes SET status = ? WHERE commande_ref = ?').run(status, order.commande_ref)
-                : db.prepare('UPDATE precommandes SET status = ? WHERE id = ?').run(status, Number(id));
+                ? db.prepare('UPDATE precommandes SET status = ?, statut = ? WHERE commande_ref = ?')
+                    .run(status, LEGACY_STATUS_BY_ORDER_STATUS[status], order.commande_ref)
+                : db.prepare('UPDATE precommandes SET status = ?, statut = ? WHERE id = ?')
+                    .run(status, LEGACY_STATUS_BY_ORDER_STATUS[status], Number(id));
         })();
         if (result.changes === 0) {
             return res.status(404).json({ success: false, message: 'Commande introuvable.' });
@@ -1296,7 +1390,8 @@ app.patch('/api/admin/precommandes/ref/:commande_ref', requireAdmin, (req, res) 
     try {
         const { commande_ref } = req.params; const { statut } = req.body;
         if (!/^CMD-[A-Z0-9-]{1,40}$/i.test(commande_ref) || !['en_attente', 'confirmee', 'livree', 'annulee'].includes(statut)) return res.status(400).json({ success: false, message: 'Référence ou statut invalide.' });
-        const info = db.prepare('UPDATE precommandes SET statut = ? WHERE commande_ref = ?').run(statut, commande_ref);
+        const info = db.prepare('UPDATE precommandes SET statut = ?, status = ? WHERE commande_ref = ?')
+            .run(statut, ORDER_STATUS_BY_LEGACY_STATUS[statut], commande_ref);
         if (info.changes === 0) return res.status(404).json({ success: false, message: 'Aucune commande trouvée pour cette référence.' });
         return res.json({ success: true, message: 'Statut mis à jour pour ' + info.changes + ' article(s).' });
     } catch(error) { console.error('Erreur PATCH commande groupée:', error); return res.status(500).json({ success: false, message: 'Erreur mise à jour.' }); }
@@ -1306,7 +1401,8 @@ app.patch('/api/admin/precommandes/:id', requireAdmin, (req, res) => {
     try {
         const { id } = req.params; const { statut } = req.body;
         if (!isPositiveIntegerParam(id) || !['en_attente', 'confirmee', 'livree', 'annulee'].includes(statut)) return res.status(400).json({ success: false, message: 'Commande ou statut invalide.' });
-        const info = db.prepare('UPDATE precommandes SET statut = ? WHERE id = ?').run(statut, id);
+        const info = db.prepare('UPDATE precommandes SET statut = ?, status = ? WHERE id = ?')
+            .run(statut, ORDER_STATUS_BY_LEGACY_STATUS[statut], id);
         if (info.changes === 0) return res.status(404).json({ success: false, message: 'Précommande non trouvée.' });
         return res.json({ success: true, message: 'Statut mis à jour.' });
     } catch(error) { console.error('Erreur PATCH precommande:', error); return res.status(500).json({ success: false, message: 'Erreur mise à jour.' }); }
@@ -1403,8 +1499,8 @@ app.get('/api/admin/export', requireAdmin, (req, res) => {
 
 app.get('/api/admin/export-recap', requireAdmin, (req, res) => {
     try {
-        let query = "SELECT produit, taille, SUM(quantite) as quantite_totale, COUNT(*) as nombre_commandes, SUM(prix_estime) as total_estime FROM precommandes WHERE COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ')";
-        query += ' GROUP BY produit, taille ORDER BY produit ASC, taille ASC';
+        let query = "SELECT produit, taille, SUM(quantite) as quantite_totale, COUNT(*) as nombre_commandes, SUM(prix_estime) as total_estime FROM precommandes WHERE COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ') AND COALESCE(LOWER(TRIM(statut)), '') != 'annulee'";
+        query += ' GROUP BY produit COLLATE BINARY, taille COLLATE BINARY ORDER BY produit COLLATE BINARY ASC, taille COLLATE BINARY ASC';
         const rows = db.prepare(query).all();
         const headers = ['Produit', 'Taille', 'Quantite Totale', 'Nombre Commandes', 'Total Estime'];
         const csvLines = [headers.map(h => sanitizeCSV(h)).join(';')];
