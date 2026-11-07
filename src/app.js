@@ -15,6 +15,9 @@ Alpine.data('merchApp', () => ({
     isProductModalOpen: false,
     isAboutOpen: false,
     isContactOpen: false,
+    contactSubmitting: false,
+    contactSuccess: '',
+    contactError: '',
     isPrivacyModalOpen: false,
     isTrackingModalOpen: false,
     cookieConsentSaved: false,
@@ -185,6 +188,39 @@ Alpine.data('merchApp', () => ({
         this.trackingNotice = '';
         this.trackingSearched = false;
         this.isTrackingModalOpen = true;
+    },
+
+    async submitContact(event) {
+        this.contactSuccess = '';
+        this.contactError = '';
+        this.contactSubmitting = true;
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nom: formData.get('nom'),
+                    prenom: formData.get('prenom'),
+                    email: formData.get('email'),
+                    message: formData.get('message')
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                this.contactError = data.message || 'Impossible d’envoyer votre message.';
+                return;
+            }
+            this.contactSuccess = 'Message envoyé avec succès !';
+            form.reset();
+        } catch (error) {
+            console.error('Erreur envoi du message de contact :', error);
+            this.contactError = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+        } finally {
+            this.contactSubmitting = false;
+        }
     },
 
     async requestTrackingCode() {
