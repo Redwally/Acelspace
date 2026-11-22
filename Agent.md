@@ -14,7 +14,8 @@ Nom de marque officiel : **AcelSpace** (jamais "ACE SPACE"), dans tous les texte
 - **Logique UI & État réactif** : Alpine.js v3 (npm).
 - **Backend** : Express 5 + SQLite (`better-sqlite3` en mode WAL), dans `backend/`, séparé du front. En dev, Vite proxifie `/api` et `/uploads` vers Express.
 - **Structure des fichiers** :
-  - `index.html` : structure HTML sémantique, modales (produit, panier, suivi, contact) et styles critiques anti-FOUC dans `<head>`.
+  - `index.html` : structure HTML principale allégée (~400 lignes), intégrant les modales via des partiels (`<include src="src/components/..." />`).
+  - `src/components/` : composants HTML indépendants (`cart-modal.html`, `contact-modal.html`, `tracking-modal.html`, `product-modal.html`, `privacy-modal.html`, `about-modal.html`, `cookies-banner.html`, `lightbox.html`).
   - `admin.html` : panel d'administration complet (gestion des commandes, produits, paliers, logo, exports).
   - `admin-print.html` : vue d'impression épurée A4 pour la remise des commandes.
   - `src/app.js` : état réactif Alpine `merchApp()` (catalogue, panier multi-articles, modales, précommande, suivi OTP, contact).
@@ -192,12 +193,12 @@ Nom de marque officiel : **AcelSpace** (jamais "ACE SPACE"), dans tous les texte
    - Aucun secret, mot de passe, hash ni clé d'API ne doit figurer dans le dépôt. Seul `.env.example` avec des clés vides ou factices est versionné.
    - Ne jamais coder d'adresse email personnelle en dur dans les fichiers applicatifs (utiliser `process.env.CONTACT_EMAIL || process.env.GMAIL_USER`).
 7. **Protection anti-bot Cloudflare Turnstile** :
-   - Widget intégré dans l'étape 2 (informations client) de la modale panier (`index.html`), juste avant le bouton de soumission.
-   - Variables d'environnement : `TURNSTILE_SITE_KEY` (frontend, dans le HTML) et `TURNSTILE_SECRET_KEY` (backend, jamais exposé côté client).
-   - Fonction `verifyTurnstileToken(token, remoteIp)` dans `backend/server.js` : POST vers `https://challenges.cloudflare.com/turnstile/v0/siteverify`. Retourne `true` si `data.success === true`, ou si `TURNSTILE_SECRET_KEY` est absent (dégradation gracieuse pour dev).
+   - Widget intégré dans l'étape 2 (informations client) de la modale panier (`src/components/cart-modal.html`) et dans la modale contact (`src/components/contact-modal.html`), juste avant les boutons de soumission.
+   - Variables d'environnement : `TURNSTILE_ENABLED` (mettre à `false` en local pour désactiver totalement le captcha et masquer les widgets), `TURNSTILE_SITE_KEY` (frontend) et `TURNSTILE_SECRET_KEY` (backend, jamais exposé côté client).
+   - Fonction `verifyTurnstileToken(token, remoteIp)` dans `backend/server.js` : retourne immédiatement `true` si `TURNSTILE_ENABLED=false` ou `TURNSTILE_SECRET_KEY` absent. Sinon, POST vers `https://challenges.cloudflare.com/turnstile/v0/siteverify`.
    - Routes protégées : `POST /api/precommande` (validation commande) et `POST /api/contact` (formulaire de contact) — vérification en toute première étape, avant tout traitement ou envoi d'email. Réponse `400` si jeton manquant ou invalide.
-   - Frontend (`src/app.js`) : état `turnstileToken` dans `merchApp()`. Callbacks globaux `window.onTurnstileResolved` / `window.onTurnstileExpired` connectent le widget à l'état Alpine. Bouton de soumission désactivé tant que `turnstileToken` est vide. Jeton réinitialisé après soumission réussie (`window.turnstile.reset()`).
-   - En production : remplacer les clés de test Cloudflare par de vraies clés obtenues sur `dash.cloudflare.com`.
+   - Frontend (`src/app.js`) : état `turnstileEnabled` alimenté par l'API `/api/precommandes/status`. Si désactivé, le bouton n'est jamais bloqué et le widget est masqué.
+   - En production : activer `TURNSTILE_ENABLED=true` et remplacer les clés de test par les vraies clés de `dash.cloudflare.com`.
 8. **Hébergement local strict des ressources & Zéro fuite d'adresses IP (RGPD)** :
    - **Interdiction formelle de charger des polices, scripts ou styles depuis des CDNs externes non consentis** (ex: interdiction absolue de Google Fonts).
    - Toutes les polices (famille *Inter*) sont obligatoirement auto-hébergées en local dans `/fonts/` (`public/fonts/`).

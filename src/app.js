@@ -95,6 +95,7 @@ Alpine.data('merchApp', () => ({
         remarques: '',
     },
     rgpdConsent: false,
+    turnstileEnabled: true, // activé par défaut, désactivable via backend (.env TURNSTILE_ENABLED=false)
     turnstileToken: '', // jeton Cloudflare Turnstile (rempli par callback widget)
 
     async init() {
@@ -223,7 +224,7 @@ Alpine.data('merchApp', () => ({
                 return;
             }
             this.contactSuccess = 'Message envoyé avec succès !';
-            this.contactTurnstileToken = '';
+            this.contactTurnstileToken = this.turnstileEnabled ? '' : 'DEV_BYPASS';
             if (window.turnstile) window.turnstile.reset();
             form.reset();
         } catch (error) {
@@ -336,6 +337,11 @@ Alpine.data('merchApp', () => ({
                     ouvert: Boolean(data.ouvert),
                     message: data.message || ''
                 };
+                if (data.turnstile_enabled === false) {
+                    this.turnstileEnabled = false;
+                    this.turnstileToken = 'DEV_BYPASS';
+                    this.contactTurnstileToken = 'DEV_BYPASS';
+                }
             }
         } catch (err) {
             console.error('Erreur chargement statut précommandes :', err);
@@ -792,7 +798,7 @@ Alpine.data('merchApp', () => ({
 
             this.clearCart();
             this.rgpdConsent = false;
-            this.turnstileToken = '';
+            this.turnstileToken = this.turnstileEnabled ? '' : 'DEV_BYPASS';
             if (window.turnstile) window.turnstile.reset();
             this.customerInfo.enfant_prenom = '';
             this.customerInfo.enfant_nom = '';

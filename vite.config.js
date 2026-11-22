@@ -2,8 +2,30 @@ import { defineConfig, loadEnv } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function htmlPartials() {
+    return {
+        name: 'html-partials',
+        transformIndexHtml(html) {
+            return html.replace(/<include\s+src=["']([^"']+)["']\s*(?:\/>|>\s*<\/include>)/gi, (match, srcPath) => {
+                const targetPath = resolve(__dirname, srcPath);
+                if (fs.existsSync(targetPath)) {
+                    return fs.readFileSync(targetPath, 'utf-8');
+                }
+                console.warn(`[html-partials] Composant introuvable : ${srcPath}`);
+                return match;
+            });
+        },
+        handleHotUpdate({ file, server }) {
+            if (file.endsWith('.html')) {
+                server.ws.send({ type: 'full-reload' });
+            }
+        }
+    };
+}
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
@@ -14,6 +36,7 @@ export default defineConfig(({ mode }) => {
 
     return {
         plugins: [
+            htmlPartials(),
             tailwindcss(),
         ],
         server: {

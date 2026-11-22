@@ -1,0 +1,102 @@
+    <!-- ── SUIVI DE COMMANDE MODAL ──────────────────────────────────────────── -->
+    <div x-show="isTrackingModalOpen" x-cloak @keydown.escape.window="isTrackingModalOpen = false"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto"
+        x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100">
+        <div @click.away="isTrackingModalOpen = false"
+            class="bg-card-bg card-border w-full max-w-[95%] md:max-w-2xl lg:max-w-3xl p-4 sm:p-6 space-y-4 relative shadow-2xl my-2 sm:my-8 max-h-[90vh] overflow-y-auto scroll-smooth">
+            <button @click="isTrackingModalOpen = false" aria-label="Fermer le suivi de commande"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white transition-colors">✕</button>
+            <div>
+                <h2 class="text-xl font-black uppercase tracking-tight text-slate-900">🔍 Suivre ma commande</h2>
+                <p class="mt-1 text-xs text-slate-600 font-semibold">Pour protéger vos informations, un code de vérification sera envoyé à l'e-mail associé à la commande.</p>
+            </div>
+            <form x-show="!trackingCodeSent" @submit.prevent="requestTrackingCode()" class="flex flex-col sm:flex-row gap-2">
+                <label for="trackingEmail" class="sr-only">Adresse e-mail de la commande</label>
+                <input id="trackingEmail" type="email" x-model="trackingEmail" required maxlength="100" autocomplete="email"
+                    placeholder="E-mail de la commande"
+                    class="flex-1 px-3 py-2 text-sm font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <button type="submit" :disabled="trackingLoading"
+                    class="px-4 py-2 bg-slate-900 text-white pill-border font-black text-xs uppercase hover:bg-slate-800 disabled:opacity-50">
+                    <span x-text="trackingLoading ? 'Envoi...' : 'Recevoir un code'"></span>
+                </button>
+            </form>
+            <form x-show="trackingCodeSent" @submit.prevent="trackOrder()" class="space-y-2">
+                <p class="text-xs text-slate-700 font-semibold">Saisissez le code reçu par e-mail. Vous pouvez préciser la référence pour retrouver une commande particulière.</p>
+                <label for="trackingCode" class="block text-xs font-black text-slate-800">Code de vérification</label>
+                <input id="trackingCode" type="text" x-model="trackingCode" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"
+                    class="w-full px-3 py-2 text-sm font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <label for="trackingReference" class="block text-xs font-black text-slate-800">Référence (facultatif)</label>
+                <input id="trackingReference" type="text" x-model="trackingReference" maxlength="44" placeholder="CMD-0042"
+                    class="w-full px-3 py-2 text-sm font-semibold bg-white pill-border focus:outline-none focus:ring-2 focus:ring-slate-900">
+                <div class="flex flex-wrap gap-2">
+                    <button type="submit" :disabled="trackingLoading"
+                        class="px-4 py-2 bg-slate-900 text-white pill-border font-black text-xs uppercase hover:bg-slate-800 disabled:opacity-50">
+                        <span x-text="trackingLoading ? 'Vérification...' : 'Afficher mes commandes'"></span>
+                    </button>
+                    <button type="button" @click="trackingCodeSent = false; trackingCode = ''; trackingError = ''; trackingNotice = ''"
+                        class="px-4 py-2 bg-white pill-border font-black text-xs uppercase hover:bg-slate-100">Changer d’e-mail</button>
+                </div>
+            </form>
+            <template x-if="trackingError">
+                <div class="p-3 bg-red-100 border-2 border-red-900 rounded text-xs font-bold text-red-950" x-text="trackingError"></div>
+            </template>
+            <template x-if="trackingNotice">
+                <div class="p-3 bg-sky-100 border-2 border-sky-900 rounded text-xs font-bold text-sky-950" x-text="trackingNotice"></div>
+            </template>
+            <template x-if="trackingSearched && trackingResults.length === 0">
+                <div class="p-4 bg-white card-border text-center text-sm font-bold text-slate-700">Aucune précommande trouvée pour cette recherche.</div>
+            </template>
+            <div class="space-y-2">
+                <template x-for="(order, index) in trackingResults" :key="`${order.reference}-${order.produit}-${order.taille}-${index}`">
+                    <article class="p-3 bg-white card-border space-y-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-black uppercase text-slate-500" x-text="order.reference"></p>
+                                <h3 class="break-words font-black text-sm text-slate-900" x-text="order.produit"></h3>
+                            </div>
+                            <span class="px-2 py-1 text-[10px] uppercase font-black border-2 rounded bg-sky-100 text-sky-950 border-sky-800"
+                                x-text="order.status_label || trackingStatusLabel(order.status)"></span>
+                        </div>
+                        <div class="flex flex-wrap justify-between gap-2 text-xs font-semibold text-slate-700">
+                            <span x-text="`${order.quantite} × ${order.taille || 'Taille unique'}`"></span>
+                            <time x-text="formatTrackingDate(order.date_creation)"></time>
+                        </div>
+                        <div class="overflow-x-auto overscroll-x-contain scroll-smooth pt-3 pb-2" aria-label="Avancement de la commande">
+                            <div class="grid min-w-[420px] grid-cols-5 gap-1 text-center">
+                                <template x-for="step in trackingSteps" :key="step.index">
+                                    <div class="relative flex flex-col items-center text-center">
+                                        <div x-show="step.index < trackingSteps.length"
+                                            class="absolute left-1/2 top-3 h-1 w-full"
+                                            :class="order.progress_index > step.index ? 'bg-emerald-500' : 'bg-slate-200'"></div>
+                                        <span class="relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-black"
+                                            :class="step.index < order.progress_index
+                                                ? 'bg-emerald-600 text-white border-emerald-700'
+                                                : (step.index === order.progress_index
+                                                    ? 'bg-sky-700 text-white border-sky-900 ring-2 ring-sky-200'
+                                                    : 'bg-slate-100 text-slate-500 border-slate-300')"
+                                            x-text="step.index < order.progress_index ? '✓' : step.index"></span>
+                                        <span class="mt-1 text-[10px] sm:text-[11px] font-bold leading-tight"
+                                            :class="step.index === order.progress_index ? 'text-sky-900' : (step.index < order.progress_index ? 'text-emerald-800' : 'text-slate-400')"
+                                            x-text="step.label"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-0.5 text-xs">
+                            <p class="font-semibold text-slate-600">
+                                Prix maximum estimé :
+                                <span :class="{ 'line-through': Number(order.current_price) < Number(order.max_price) }"
+                                    x-text="formatPrice(order.max_price)"></span>
+                            </p>
+                            <p class="font-black text-emerald-800">
+                                Prix actuel à payer :
+                                <span x-text="formatPrice(order.current_price)"></span>
+                            </p>
+                        </div>
+                    </article>
+                </template>
+            </div>
+        </div>
+    </div>
+

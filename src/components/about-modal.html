@@ -1,0 +1,18 @@
+    <!-- ── À PROPOS MODAL ──────────────────────────────────────────────────── -->
+    <div x-show="isAboutOpen" x-cloak @keydown.escape.window="isAboutOpen = false"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+
+        <div @click.away="isAboutOpen = false"
+            class="bg-card-bg card-border w-full max-w-md p-6 space-y-4 relative shadow-2xl">
+            <button @click="isAboutOpen = false"
+                class="absolute top-3 right-3 w-7 h-7 bg-white pill-border font-black text-xs hover:bg-slate-900 hover:text-white">✕</button>
+            <h2 class="text-xl font-black uppercase tracking-tight">Le club AcelSpace</h2>
+            <div class="break-words space-y-2 text-xs text-slate-800 font-medium leading-relaxed">
+                <p>Depuis 2014, le club fusée <strong>AcelSpace</strong> est un lieu où les jeunes peuvent imaginer et créer leur fusée, depuis le plan jusqu’à la réalisation, dans un esprit d’entraide et de travail de groupe.</p>
+                <p>Notre boutique vitrine présente la collection officielle de goodies aux couleurs du club.</p>
+            </div>
+            <button @click="isAboutOpen = false"
+                class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border">FERMER</button>
+        </div>
+    </div>
+

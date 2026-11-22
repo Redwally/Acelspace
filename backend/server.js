@@ -31,6 +31,9 @@ function escapeHtml(value) {
 
 // ─── Cloudflare Turnstile — vérification anti-bot côté serveur ───────────────
 async function verifyTurnstileToken(token, remoteIp) {
+    if (process.env.TURNSTILE_ENABLED === 'false') {
+        return true; // Désactivé explicitement pour le développement local
+    }
     if (!token) return false;
     const secret = process.env.TURNSTILE_SECRET_KEY;
     if (!secret) {
@@ -656,7 +659,12 @@ app.get('/api/precommandes/status', (req, res) => {
         res.setHeader('Cache-Control', 'no-store');
         const rowOuvert = db.prepare("SELECT valeur FROM settings WHERE cle = 'precommandes_ouvertes'").get();
         const rowMsg = db.prepare("SELECT valeur FROM settings WHERE cle = 'message_fermeture'").get();
-        return res.json({ ouvert: rowOuvert ? rowOuvert.valeur === '1' : true, message: rowMsg ? rowMsg.valeur : 'Les précommandes sont terminées. Merci !' });
+        const turnstileEnabled = process.env.TURNSTILE_ENABLED !== 'false';
+        return res.json({
+            ouvert: rowOuvert ? rowOuvert.valeur === '1' : true,
+            message: rowMsg ? rowMsg.valeur : 'Les précommandes sont terminées. Merci !',
+            turnstile_enabled: turnstileEnabled
+        });
     } catch(error) {
         console.error('Erreur status:', error);
         return res.status(500).json({ success: false, message: 'Erreur statut.' });
