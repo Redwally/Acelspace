@@ -573,6 +573,14 @@ function validateProductBody(body, isNew = false) {
 app.post('/api/contact', contactLimiter, async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const body = req.body || {};
+
+    // 0. Vérification anti-bot Cloudflare Turnstile
+    const turnstileToken = body['cf-turnstile-response'];
+    const captchaOk = await verifyTurnstileToken(turnstileToken, req.ip);
+    if (!captchaOk) {
+        return res.status(400).json({ success: false, message: 'Vérification anti-bot échouée. Veuillez réessayer.' });
+    }
+
     if (hasInvalidTextFields(body, { nom: 100, prenom: 100, email: 254, message: 5000 })) {
         return res.status(400).json({ success: false, message: 'Les informations saisies sont invalides.' });
     }

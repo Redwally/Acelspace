@@ -1126,11 +1126,12 @@
             <div class="break-words space-y-2 text-xs font-mono">
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">EMAIL</span>
-                    <span class="font-bold text-slate-900 text-sm">acelspacfx@gmail.com</span>
+                    <a href="mailto:contact@acelspace.fr" class="font-bold text-slate-900 text-sm hover:underline">contact@acelspace.fr</a>
+                    <span class="block text-[11px] text-slate-500 font-sans font-medium mt-0.5">(ou <a href="mailto:acelspacfx@gmail.com" class="underline">acelspacfx@gmail.com</a>)</span>
                 </div>
                 <div class="p-3 bg-white pill-border">
                     <span class="block text-slate-500 font-sans text-[10px] uppercase font-bold">INSTAGRAM</span>
-                    <span class="font-bold text-slate-900 text-sm">@acelspace78</span>
+                    <a href="https://instagram.com/acelspace78" target="_blank" rel="noopener noreferrer" class="font-bold text-slate-900 text-sm hover:underline">@acelspace78 ↗</a>
                 </div>
             </div>
             <form @submit.prevent="submitContact($event)" class="p-4 bg-white pill-border space-y-3">
@@ -1157,8 +1158,20 @@
                     <textarea name="message" required maxlength="5000" rows="4"
                         class="w-full p-2 bg-card-bg pill-border font-medium resize-y"></textarea>
                 </label>
-                <button type="submit" :disabled="contactSubmitting"
-                    class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-slate-800 disabled:opacity-60">
+
+                <!-- Widget Turnstile anti-bot contact -->
+                <div class="pt-1 flex justify-center">
+                    <div class="cf-turnstile"
+                         data-sitekey="1x00000000000000000000AA"
+                         data-callback="onContactTurnstileResolved"
+                         data-expired-callback="onContactTurnstileExpired"
+                         data-error-callback="onContactTurnstileExpired"
+                         data-theme="light">
+                    </div>
+                </div>
+
+                <button type="submit" :disabled="contactSubmitting || !contactTurnstileToken"
+                    class="w-full py-2 bg-slate-900 text-white font-black text-xs uppercase pill-border hover:bg-slate-800 disabled:opacity-60 cursor-pointer">
                     <span x-text="contactSubmitting ? 'ENVOI…' : 'ENVOYER'"></span>
                 </button>
                 <p x-show="contactSuccess" x-text="contactSuccess" role="status" aria-live="polite"
@@ -1234,6 +1247,20 @@
             const el = document.querySelector('[x-data="merchApp"]');
             if (el && el._x_dataStack && el._x_dataStack[0]) {
                 el._x_dataStack[0].turnstileToken = '';
+            }
+        };
+
+        // Callbacks Cloudflare Turnstile pour le formulaire Contact
+        window.onContactTurnstileResolved = function(token) {
+            const el = document.querySelector('[x-data="merchApp"]');
+            if (el && el._x_dataStack && el._x_dataStack[0]) {
+                el._x_dataStack[0].contactTurnstileToken = token;
+            }
+        };
+        window.onContactTurnstileExpired = function() {
+            const el = document.querySelector('[x-data="merchApp"]');
+            if (el && el._x_dataStack && el._x_dataStack[0]) {
+                el._x_dataStack[0].contactTurnstileToken = '';
             }
         };
     </script>

@@ -195,7 +195,7 @@ Nom de marque officiel : **AcelSpace** (jamais "ACE SPACE"), dans tous les texte
    - Widget intégré dans l'étape 2 (informations client) de la modale panier (`index.html`), juste avant le bouton de soumission.
    - Variables d'environnement : `TURNSTILE_SITE_KEY` (frontend, dans le HTML) et `TURNSTILE_SECRET_KEY` (backend, jamais exposé côté client).
    - Fonction `verifyTurnstileToken(token, remoteIp)` dans `backend/server.js` : POST vers `https://challenges.cloudflare.com/turnstile/v0/siteverify`. Retourne `true` si `data.success === true`, ou si `TURNSTILE_SECRET_KEY` est absent (dégradation gracieuse pour dev).
-   - Route protégée : `POST /api/precommande` — vérification en toute première étape, avant toute validation des champs ou traitement email. Réponse `400` si jeton manquant ou invalide.
+   - Routes protégées : `POST /api/precommande` (validation commande) et `POST /api/contact` (formulaire de contact) — vérification en toute première étape, avant tout traitement ou envoi d'email. Réponse `400` si jeton manquant ou invalide.
    - Frontend (`src/app.js`) : état `turnstileToken` dans `merchApp()`. Callbacks globaux `window.onTurnstileResolved` / `window.onTurnstileExpired` connectent le widget à l'état Alpine. Bouton de soumission désactivé tant que `turnstileToken` est vide. Jeton réinitialisé après soumission réussie (`window.turnstile.reset()`).
    - En production : remplacer les clés de test Cloudflare par de vraies clés obtenues sur `dash.cloudflare.com`.
 8. **Hébergement local strict des ressources & Zéro fuite d'adresses IP (RGPD)** :

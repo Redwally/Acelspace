@@ -18,6 +18,7 @@ Alpine.data('merchApp', () => ({
     contactSubmitting: false,
     contactSuccess: '',
     contactError: '',
+    contactTurnstileToken: '',
     isPrivacyModalOpen: false,
     isTrackingModalOpen: false,
     cookieConsentSaved: false,
@@ -194,6 +195,12 @@ Alpine.data('merchApp', () => ({
     async submitContact(event) {
         this.contactSuccess = '';
         this.contactError = '';
+
+        if (!this.contactTurnstileToken) {
+            this.contactError = 'Veuillez compléter la vérification anti-bot avant d’envoyer votre message.';
+            return;
+        }
+
         this.contactSubmitting = true;
         const form = event.currentTarget;
         const formData = new FormData(form);
@@ -206,7 +213,8 @@ Alpine.data('merchApp', () => ({
                     nom: formData.get('nom'),
                     prenom: formData.get('prenom'),
                     email: formData.get('email'),
-                    message: formData.get('message')
+                    message: formData.get('message'),
+                    'cf-turnstile-response': this.contactTurnstileToken
                 })
             });
             const data = await response.json();
@@ -215,6 +223,8 @@ Alpine.data('merchApp', () => ({
                 return;
             }
             this.contactSuccess = 'Message envoyé avec succès !';
+            this.contactTurnstileToken = '';
+            if (window.turnstile) window.turnstile.reset();
             form.reset();
         } catch (error) {
             console.error('Erreur envoi du message de contact :', error);
