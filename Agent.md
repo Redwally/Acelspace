@@ -51,6 +51,7 @@ Nom de marque officiel : **AcelSpace** (jamais "ACE SPACE"), dans tous les texte
 ## 3. Typographie
 
 - **Famille** : `Inter`, fallback `system-ui, -apple-system, sans-serif`. Aucune autre police.
+- **Hébergement local (RGPD)** : les polices Inter sont servies localement depuis `/fonts/Inter-VariableFont_opsz,wght.ttf` (aucun appel externe vers Google Fonts).
 - **Titres (H1, "CLUB", badges)** : `font-black` (900), majuscules, `tracking-tight`.
 - **Noms de produits / navigation / labels** : `font-bold` à `font-black`, majuscules.
 - **Descriptions courantes** : `font-medium`, casse normale.
@@ -197,6 +198,21 @@ Nom de marque officiel : **AcelSpace** (jamais "ACE SPACE"), dans tous les texte
    - Route protégée : `POST /api/precommande` — vérification en toute première étape, avant toute validation des champs ou traitement email. Réponse `400` si jeton manquant ou invalide.
    - Frontend (`src/app.js`) : état `turnstileToken` dans `merchApp()`. Callbacks globaux `window.onTurnstileResolved` / `window.onTurnstileExpired` connectent le widget à l'état Alpine. Bouton de soumission désactivé tant que `turnstileToken` est vide. Jeton réinitialisé après soumission réussie (`window.turnstile.reset()`).
    - En production : remplacer les clés de test Cloudflare par de vraies clés obtenues sur `dash.cloudflare.com`.
+8. **Hébergement local strict des ressources & Zéro fuite d'adresses IP (RGPD)** :
+   - **Interdiction formelle de charger des polices, scripts ou styles depuis des CDNs externes non consentis** (ex: interdiction absolue de Google Fonts).
+   - Toutes les polices (famille *Inter*) sont obligatoirement auto-hébergées en local dans `/fonts/` (`public/fonts/`).
+   - Aucun traceur publicitaire ou outil de profilage tiers ne doit être injecté sur le site.
+9. **Consentement explicite & Traçabilité (Art. 6 & 7 du RGPD)** :
+   - Tout formulaire collectant des données à caractère personnel (notamment la précommande) impose une case à cocher explicite, obligatoire et **non pré-cochée**.
+   - Le consentement doit être enregistré avec horodatage strict côté serveur (`date_consentement`).
+10. **Durée de conservation & Purge automatique (Droit à l'oubli)** :
+    - Les données personnelles opérationnelles ne doivent jamais être conservées au-delà de 3 ans.
+    - La fonction `purgeExpiredPersonalData()` dans `backend/database.js` doit impérativement être maintenue et exécutée avant chaque cycle de sauvegarde quotidienne (`backend/backup.js`).
+    - L'administration doit conserver sa route de suppression intégrale (`DELETE /api/admin/clients/:id`) garantissant l'effacement de l'ensemble des données d'un client et de ses commandes sans orphelin.
+11. **Gestion des cookies conforme aux référentiels CNIL** :
+    - Le refus de traceur doit être aussi simple que l'acceptation.
+    - Le gestionnaire de préférences de cookies doit rester réouvrable et modifiable à tout moment depuis le pied de page du site.
+    - Les documents légaux ([`politique-confidentialite.html`](file:///C:/Users/lucas/Downloads/Acelspace/politique-confidentialite.html) et [`mentions-legales.html`](file:///C:/Users/lucas/Downloads/Acelspace/mentions-legales.html)) doivent demeurer parfaitement alignés avec les traitements réels.
 
 ---
 
@@ -224,9 +240,12 @@ Nom de marque officiel : **AcelSpace** (jamais "ACE SPACE"), dans tous les texte
 - [ ] Nom écrit rigoureusement **AcelSpace** partout.
 - [ ] Fond `#f6f3eb` (`bg-card-bg`) pour les blocs, bordures nettes `2px` ou `2.5px solid #111827`.
 - [ ] Typographie `Inter` exclusive, majuscules pour les titres et labels.
+- [ ] Polices hébergées en local (`/fonts/`), zéro appel externe vers Google Fonts ou CDN tiers.
 - [ ] Aucune donnée personnelle envoyée sur un canal public tiers.
 - [ ] Tout texte utilisateur inséré dans un email est échappé avec `escapeHtml()`.
 - [ ] Validation stricte des données côté serveur ET côté client.
+- [ ] Consentement RGPD obligatoire, non pré-coché et horodaté.
+- [ ] Purge automatique des données expirées (> 3 ans) maintenue.
 - [ ] Les paliers XLSX acceptent les grilles continues et discrètes.
 - [ ] Détection propre des personnalisations d'articles sans propriété fantôme.
 - [ ] Zéro altération de la BDD : 100 % de compatibilité avec la base existante préservée.
