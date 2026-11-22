@@ -25,6 +25,8 @@
     }
     </script>
     <link rel="stylesheet" href="/src/style.css">
+    <!-- Cloudflare Turnstile — protection anti-bot formulaire précommande -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <!-- Critical CSS : Empêche le flash de contenu sans style (FOUC) et le logo géant au chargement -->
     <style>
         [x-cloak] {
@@ -171,10 +173,10 @@
                     <div class="flex flex-col h-full justify-between break-words" x-data="{ currentImageIndex: 0 }">
                         <!-- Image Box -->
                         <div class="flex w-full h-56 sm:h-72 lg:h-auto lg:flex-1 items-center justify-center p-4 min-h-0 relative bg-card-bg overflow-hidden">
-                            <img :src="currentImageIndex === 1 && topProduct.image_url_2 ? topProduct.image_url_2 : topProduct.image" :alt="topProduct.name"
+                            <img :src="(currentImageIndex === 1 && topProduct.image_url_2 ? topProduct.image_url_2 : topProduct.image) || 'https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'" :alt="topProduct.name"
                                 @click.stop="openLightbox(topProduct.image, topProduct.image_url_2, currentImageIndex)"
                                 class="w-full h-full max-h-full max-w-full object-contain cursor-zoom-in hover:scale-105 transition-transform drop-shadow-md rounded-md"
-                                onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                                @error="$event.target.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
                             <button x-show="topProduct.image_url_2" x-cloak type="button"
                                 @click="currentImageIndex = currentImageIndex === 0 ? 1 : 0"
                                 class="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 pill-border text-[10px] font-black uppercase text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
@@ -259,10 +261,10 @@
                     <!-- Image Box -->
                     <div
                         class="relative bg-card-bg p-4 h-64 sm:h-72 flex items-center justify-center border-b-2 border-slate-900 overflow-hidden">
-                        <img :src="currentImageIndex === 1 && product.image_url_2 ? product.image_url_2 : product.image" :alt="product.name"
+                        <img :src="(currentImageIndex === 1 && product.image_url_2 ? product.image_url_2 : product.image) || 'https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'" :alt="product.name"
                             @click.stop="openLightbox(product.image, product.image_url_2, currentImageIndex)"
                             class="w-full h-full object-contain p-2 drop-shadow-md transition-transform duration-200 group-hover:scale-105 rounded-md cursor-zoom-in"
-                            onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                            @error="$event.target.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
                         <button x-show="product.image_url_2" x-cloak type="button"
                             @click="currentImageIndex = currentImageIndex === 0 ? 1 : 0"
                             class="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 pill-border text-[10px] font-black uppercase text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
@@ -399,10 +401,10 @@
                 <div class="space-y-4">
                     <!-- Image Box -->
                     <div class="relative bg-card-bg card-border p-4 h-64 sm:h-72 flex items-center justify-center overflow-hidden">
-                        <img :src="currentImageIndex === 1 && activeProduct.image_url_2 ? activeProduct.image_url_2 : activeProduct.image" :alt="activeProduct.name"
+                        <img :src="(currentImageIndex === 1 && activeProduct.image_url_2 ? activeProduct.image_url_2 : activeProduct.image) || 'https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'" :alt="activeProduct.name"
                             @click.stop="openLightbox(activeProduct.image, activeProduct.image_url_2, currentImageIndex)"
                             class="w-full h-full object-contain p-2 rounded-md drop-shadow-md cursor-zoom-in hover:scale-105 transition-transform duration-200"
-                            onerror="this.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
+                            @error="$event.target.src='https://placehold.co/400x400/f6f3eb/111827?text=Image+Produit'">
                         <button x-show="activeProduct.image_url_2" x-cloak type="button"
                             @click="currentImageIndex = currentImageIndex === 0 ? 1 : 0"
                             class="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 pill-border text-[10px] font-black uppercase text-slate-900 hover:bg-slate-900 hover:text-white transition-colors">
@@ -614,15 +616,15 @@
                                     <!-- Image + Nom + Prix unitaire -->
                                     <div class="flex flex-1 items-center gap-3 min-w-0">
                                         <div class="w-12 h-12 bg-card-bg card-border p-1 flex items-center justify-center shrink-0">
-                                            <img :src="item.image" :alt="item.name"
+                                            <img :src="item.image || 'https://placehold.co/100x100/f6f3eb/111827?text=ACEL'" :alt="item.name"
                                                 class="max-h-full max-w-full object-contain rounded shrink-0"
-                                                onerror="this.src='https://placehold.co/100x100/f6f3eb/111827?text=ACEL'">
+                                                @error="$event.target.src='https://placehold.co/100x100/f6f3eb/111827?text=ACEL'">
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <h4 class="break-words font-black text-xs sm:text-sm uppercase text-slate-900"
                                                 x-text="item.name"></h4>
                                             <p class="break-words text-[10px] font-bold text-slate-600"
-                                                x-text="`${item.taille || 'Taille unique'} • {item.noCustomization ? 'Sans personnalisation' : (item.requiresCustomization ? 'Avec personnalisation' : 'Personnalisation non requise')}`"></p>
+                                                x-text="`${item.taille || 'Taille unique'} • ${item.noCustomization ? 'Sans personnalisation' : (item.requiresCustomization ? 'Avec personnalisation' : 'Personnalisation non requise')}`"></p>
                                             <p class="text-[11px] font-bold text-slate-600"
                                                x-text="item.unitPrice !== null ? formatPrice(item.unitPrice) + ' / u.' : 'Prix indisponible'"></p>
                                         </div>
@@ -882,13 +884,24 @@
                         </label>
                     </div>
 
+                    <!-- Widget Turnstile anti-bot — résoudre avant soumission -->
+                    <div class="pt-2 flex justify-center">
+                        <div class="cf-turnstile"
+                             data-sitekey="1x00000000000000000000AA"
+                             data-callback="onTurnstileResolved"
+                             data-expired-callback="onTurnstileExpired"
+                             data-error-callback="onTurnstileExpired"
+                             data-theme="light">
+                        </div>
+                    </div>
+
                     <!-- Boutons Actions -->
                     <div class="pt-1 flex items-center gap-3">
                         <button type="button" @click="goToCartStep(1)"
                             class="px-4 py-3 bg-white pill-border font-bold text-xs uppercase hover:bg-slate-900 hover:text-white transition-colors cursor-pointer">
                             RETOUR
                         </button>
-                        <button type="submit" :disabled="cartSubmitting || !preorderStatus.ouvert"
+                        <button type="submit" :disabled="cartSubmitting || !preorderStatus.ouvert || !turnstileToken"
                             class="flex-1 py-3 bg-slate-900 text-white font-black text-xs sm:text-sm uppercase pill-border hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md">
                             <template x-if="cartSubmitting">
                                 <span class="inline-block animate-spin">⏳</span>
@@ -1194,7 +1207,7 @@
             class="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-white/90 text-slate-900 text-2xl font-black hover:bg-white transition-colors">
             ✕
         </button>
-        <img :src="currentLightboxIndex === 1 && lightboxImage2 ? lightboxImage2 : lightboxImage"
+        <img :src="(currentLightboxIndex === 1 && lightboxImage2 ? lightboxImage2 : lightboxImage) || 'https://placehold.co/600x600/f6f3eb/111827?text=Image+Produit'"
             alt="Image produit en grand format" @click.stop
             class="max-h-[90vh] max-w-full w-full object-contain rounded-lg shadow-2xl">
         <button x-show="lightboxImage2" x-cloak @click="toggleLightboxImage()" type="button"
@@ -1202,6 +1215,23 @@
             Changer la vue
         </button>
     </div>
+
+    <!-- Callbacks globaux Cloudflare Turnstile — connectent le widget à l'état Alpine -->
+    <script>
+        window.onTurnstileResolved = function(token) {
+            // Injecte le jeton dans le composant Alpine merchApp
+            const el = document.querySelector('[x-data="merchApp"]');
+            if (el && el._x_dataStack && el._x_dataStack[0]) {
+                el._x_dataStack[0].turnstileToken = token;
+            }
+        };
+        window.onTurnstileExpired = function() {
+            const el = document.querySelector('[x-data="merchApp"]');
+            if (el && el._x_dataStack && el._x_dataStack[0]) {
+                el._x_dataStack[0].turnstileToken = '';
+            }
+        };
+    </script>
 
 </body>
 

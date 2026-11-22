@@ -12,13 +12,16 @@ import db from './database.js';
 export function findProduct(identifier) {
     if (!identifier) return null;
     const clean = String(identifier).trim();
+    const numId = Number(clean);
 
-    // Try numeric id first
-    const byId = db.prepare(
-        `SELECT id, name, price, sizes, requires_customization, allow_no_customization FROM products WHERE actif = 1 AND id = ?`
-    ).get(Number(clean));
-    if (byId) {
-        return { ...byId, sizes: JSON.parse(byId.sizes || '["Taille unique"]') };
+    // Try numeric id first if valid safe integer
+    if (Number.isSafeInteger(numId) && numId > 0) {
+        const byId = db.prepare(
+            `SELECT id, name, price, sizes, requires_customization, allow_no_customization FROM products WHERE actif = 1 AND id = ?`
+        ).get(numId);
+        if (byId) {
+            return { ...byId, sizes: JSON.parse(byId.sizes || '["Taille unique"]') };
+        }
     }
 
     // Try exact name match (case-insensitive, legacy support)
@@ -36,7 +39,9 @@ export function getTierProgress(product_id) {
     const current = db.prepare(`
         SELECT COALESCE(SUM(quantite), 0) as quantity
         FROM precommandes
-        WHERE product_id = ? AND statut != 'annulee'
+        WHERE product_id = ?
+          AND COALESCE(UPPER(TRIM(status)), '') NOT IN ('ANNULE', 'ANNULÉ')
+          AND COALESCE(LOWER(TRIM(statut)), '') != 'annulee'
     `).get(product_id);
     const current_quantity = Number(current?.quantity) || 0;
     const tiers = db.prepare(`

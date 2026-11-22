@@ -577,7 +577,7 @@
                                                     <img :src="product.image || 'https://placehold.co/100x100/f6f3eb/111827?text=Produit'"
                                                         :alt="product.name"
                                                         class="max-w-full max-h-full object-contain rounded"
-                                                        onerror="this.src='https://placehold.co/100x100/f6f3eb/111827?text=Produit'">
+                                                        @error="$event.target.src='https://placehold.co/100x100/f6f3eb/111827?text=Produit'">
                                                 </div>
                                             </td>
 
@@ -944,33 +944,33 @@
 
                 <!-- Image Upload & Preview -->
                 <div class="space-y-2">
-                    <label class="block text-[11px] font-black uppercase text-slate-700">Image du produit (JPEG, PNG ou
-                        WebP - 2 Mo max)</label>
+                    <label class="block text-[11px] font-black uppercase text-slate-700">Image du produit (JPEG, PNG, WebP ou GIF - 10 Mo max)</label>
 
                     <div class="flex items-center gap-4">
                         <!-- Preview Thumbnail -->
                         <div
                             class="w-20 h-20 bg-white card-border p-1 flex items-center justify-center shrink-0 overflow-hidden">
-                            <template x-if="productForm.imagePreview">
-                                <img :src="productForm.imagePreview" alt="Aperçu upload"
-                                    class="max-w-full max-h-full object-contain rounded">
+                            <template x-if="productForm.imagePreview || productForm.image || productForm.currentImage">
+                                <img :src="productForm.imagePreview || productForm.image || productForm.currentImage" alt="Aperçu upload"
+                                    class="max-w-full max-h-full object-contain rounded"
+                                    @error="$event.target.src='https://placehold.co/100x100/f6f3eb/111827?text=Produit'">
                             </template>
-                            <template x-if="!productForm.imagePreview && productForm.currentImage">
-                                <img :src="productForm.currentImage" alt="Image actuelle"
-                                    class="max-w-full max-h-full object-contain rounded">
-                            </template>
-                            <template x-if="!productForm.imagePreview && !productForm.currentImage">
+                            <template x-if="!productForm.imagePreview && !productForm.image && !productForm.currentImage">
                                 <span class="text-2xl text-slate-400">🖼️</span>
                             </template>
                         </div>
 
                         <!-- File Input -->
                         <div class="flex-1 space-y-1">
-                            <input type="file" accept="image/jpeg,image/png,image/webp"
-                                @change="handleImageSelect($event)"
-                                class="text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:pill-border file:bg-white file:font-black file:text-xs file:uppercase file:cursor-pointer hover:file:bg-slate-900 hover:file:text-white file:transition-colors">
-                            <p class="text-[10px] text-slate-500 font-semibold">Signature magique vérifiée. Pas de SVG.
-                                Nom aléatoire sécurisé.</p>
+                            <input type="file" accept="image/*"
+                                @change="handleImageUpload($event, 'image')"
+                                class="w-full text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:pill-border file:bg-white file:font-black file:text-xs file:uppercase file:cursor-pointer hover:file:bg-slate-900 hover:file:text-white file:transition-colors">
+                            <div class="flex items-center gap-2">
+                                <p class="text-[10px] text-slate-600 font-semibold"
+                                    x-text="productForm.imageFileName || (productForm.image ? 'Image enregistrée' : (productForm.currentImage ? 'Image actuelle conservée' : 'Aucun fichier choisi'))"></p>
+                                <span x-show="imageUploading" x-cloak class="text-[10px] text-sky-700 font-bold animate-pulse">⏳ Téléversement de l'image en cours...</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 font-semibold">Signature magique vérifiée. JPEG, PNG, WebP ou GIF. Jusqu'à 10 Mo.</p>
                         </div>
                     </div>
                 </div>

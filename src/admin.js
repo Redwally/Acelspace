@@ -52,6 +52,7 @@ Alpine.data('adminApp', () => ({
     products: [],
     productsLoading: false,
     logoUploading: false,
+    imageUploading: false,
     productModalOpen: false,
     productSaving: false,
     productFormError: '',
@@ -67,6 +68,8 @@ Alpine.data('adminApp', () => ({
         customization_fields: '',
         allow_no_customization: true,
         actif: 1,
+        image: '',
+        imageFileName: '',
         imageFile: null,
         imagePreview: null,
         currentImage: null,
@@ -594,6 +597,8 @@ Alpine.data('adminApp', () => ({
                 customization_fields: product.customization_fields || '',
                 allow_no_customization: product.allow_no_customization === 1,
                 actif: product.actif,
+                image: product.image || '',
+                imageFileName: '',
                 imageFile: null,
                 imagePreview: null,
                 currentImage: product.image || null,
@@ -614,6 +619,8 @@ Alpine.data('adminApp', () => ({
                 customization_fields: '',
                 allow_no_customization: true,
                 actif: 1,
+                image: '',
+                imageFileName: '',
                 imageFile: null,
                 imagePreview: null,
                 currentImage: null,
@@ -667,14 +674,17 @@ Alpine.data('adminApp', () => ({
             return;
         }
 
-        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowed.includes(file.type)) {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/pjpeg', 'image/x-png'];
+        const ext = file.name ? file.name.substring(file.name.lastIndexOf('.')).toLowerCase() : '';
+        const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (!allowedTypes.includes(file.type) && !allowedExts.includes(ext)) {
             this.productFormError = 'Format image invalide. JPEG, PNG ou WebP uniquement (SVG interdit).';
             return;
         }
 
         this.productForm.imageFile = file;
         this.productForm.imagePreview = URL.createObjectURL(file);
+        this.productForm.imageFileName = file.name;
         this.productFormError = '';
     },
 
@@ -683,13 +693,16 @@ Alpine.data('adminApp', () => ({
         const file = input.files && input.files[0];
         if (!file) return;
 
-        if (file.size > 2 * 1024 * 1024) {
-            this.productFormError = 'Image trop volumineuse (max 2 Mo).';
+        if (file.size > 10 * 1024 * 1024) {
+            this.productFormError = 'Image trop volumineuse (max 10 Mo).';
             input.value = '';
             return;
         }
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-            this.productFormError = 'Format image invalide. JPEG, PNG ou WebP uniquement (SVG interdit).';
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg', 'image/pjpeg', 'image/x-png'];
+        const ext = file.name ? file.name.substring(file.name.lastIndexOf('.')).toLowerCase() : '';
+        const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif'];
+        if (!allowedTypes.includes(file.type) && !allowedExts.includes(ext)) {
+            this.productFormError = 'Format image invalide. JPEG, PNG, WebP ou GIF uniquement (SVG interdit).';
             input.value = '';
             return;
         }
@@ -698,7 +711,13 @@ Alpine.data('adminApp', () => ({
             input.value = '';
             return;
         }
-        if (targetField === 'image_url_2') {
+
+        if (targetField === 'image') {
+            this.productForm.imageFileName = file.name;
+            this.productForm.imageFile = file;
+            this.productForm.imagePreview = URL.createObjectURL(file);
+            this.imageUploading = true;
+        } else if (targetField === 'image_url_2') {
             this.productForm.imageUrl2FileName = file.name;
         } else if (targetField === 'detail_table_image') {
             this.productForm.detailTableImageFileName = file.name;
@@ -711,23 +730,35 @@ Alpine.data('adminApp', () => ({
             const data = await response.json();
             if (!response.ok || !data.success || typeof data.url !== 'string') {
                 this.productFormError = data.message || 'Erreur lors du téléversement de l’image.';
+                if (targetField === 'image') {
+                    this.productForm.imageFileName = '';
+                }
                 if (targetField === 'image_url_2') this.productForm.imageUrl2FileName = '';
                 if (targetField === 'detail_table_image') this.productForm.detailTableImageFileName = '';
                 return;
             }
             this.productForm[targetField] = data.url;
+            if (targetField === 'image') {
+                this.productForm.imagePreview = data.url;
+            }
             this.productFormError = '';
         } catch (error) {
             console.error('Erreur téléversement image produit :', error);
-            this.productFormError = `Erreur réseau : ${error.message}`;
+            this.productFormError = `Erreur réseau lors de l'envoi de l'image : ${error.message}`;
+            if (targetField === 'image') this.productForm.imageFileName = '';
             if (targetField === 'image_url_2') this.productForm.imageUrl2FileName = '';
             if (targetField === 'detail_table_image') this.productForm.detailTableImageFileName = '';
         } finally {
+            if (targetField === 'image') this.imageUploading = false;
             input.value = '';
         }
     },
 
     async saveProduct() {
+        if (this.imageUploading) {
+            this.productFormError = "Téléversement de l'image en cours, veuillez patienter un instant.";
+            return;
+        }
         this.productFormError = '';
 
         if (!this.productForm.name || !this.productForm.name.trim()) {
@@ -775,6 +806,8 @@ Alpine.data('adminApp', () => ({
             formData.append('detail_table_image', (this.productForm.detail_table_image || '').trim());
             if (this.productForm.imageFile) {
                 formData.append('image', this.productForm.imageFile);
+            } else if (this.productForm.image) {
+                formData.append('image', this.productForm.image);
             }
 
             const url = this.productForm.id
